@@ -4,15 +4,19 @@
 #include <iostream>
 #include <sstream>
 
-bool test_perft(Engine& engine, std::string fen, uint8_t depth, uint64_t expected)
+std::pair<bool, uint64_t> test_perft(Engine& engine, std::string fen, uint8_t depth, uint64_t expected)
 {
 	engine.board.load_fen(fen);
-	uint64_t result = engine.perft(depth);
+	uint64_t result;
+	if (engine.board.side_to_move == White)
+		result = engine.perft<White>(depth);
+	else
+		result = engine.perft<Black>(depth);
 	if (result != expected)
 	{
-		return false;
+		return {false, result};
 	}
-	return true;
+	return {true, result};
 }
 
 
@@ -55,10 +59,11 @@ void test_fens_with_perft(Engine& engine, std::string path, size_t first_positio
 			continue;
 		}
 
-		if (!test_perft(engine, fen, depth, expected))
+		std::pair<bool, uint64_t> test_result = test_perft(engine, fen, depth, expected);
+		if (!test_result.first)
 		{
 			failed_tests++;
-			std::cout << "Test failed for line " << line_number << ": " << line << " got: " << engine.perft(depth) << " expected: " << expected << std::endl;
+			std::cout << "Test failed for line " << line_number << ": " << line << " got: " << test_result.second << " expected: " << expected << std::endl;
 		}
 		total_tests++;
 		

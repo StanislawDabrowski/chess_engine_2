@@ -19,7 +19,8 @@ void exit_command_function(std::vector<std::string> args)
 
 void go_command_function(std::vector<std::string> args)
 {
-	if (args[0]=="perft")
+
+	if (args.size() >= 2 && args[0]=="perft")
 	{
 		uint8_t depth = std::stoi(args[1]);
 		if (engine.board.side_to_move == White)
@@ -40,7 +41,12 @@ void go_command_function(std::vector<std::string> args)
 			Move move = engine.board.positions_stack[engine.board.current_position_idx].legal_moves[i];
 			engine.board.make_move(move);
 			if (depth>1)
-				perft_result = engine.perft(depth - 1);
+			{
+				if (engine.board.side_to_move == White)
+					perft_result = engine.perft<White>(depth - 1);
+				else
+					perft_result = engine.perft<Black>(depth - 1);
+			}
 			else
 				perft_result = 1;
 			count += perft_result;
@@ -48,6 +54,17 @@ void go_command_function(std::vector<std::string> args)
 			engine.board.unmake_move();
 		}
 		std::cout << count << std::endl;
+	}
+	else
+	{
+		std::pair<Move, uint16_t> search_result;
+		if (engine.board.side_to_move == White)
+			search_result = engine.search<White>(0);
+		else
+			search_result = engine.search<Black>(0);
+		std::cout << "bestmove " << Utils::move_to_string(search_result.first) << std::endl;
+
+
 	}
 }
 void position_command_function(std::vector<std::string> args)

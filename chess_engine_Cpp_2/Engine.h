@@ -13,5 +13,8 @@ public:
 	MoveGenerator mg;
 
 	Engine();
+	template<Color color>
 	uint64_t perft(uint8_t depth);
+	template<Color color>
+	std::pair<Move, uint16_t> search(uint8_t depth);
 };
