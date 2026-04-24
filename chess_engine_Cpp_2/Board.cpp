@@ -111,6 +111,7 @@ void Board::load_fen(std::string fen)
 	}
 	else
 		i+=2;
+	positions_stack[current_position_idx].halfmove_clock = 0;
 	while (fen[i]!=' ')//halfmove count
 	{
 		positions_stack[current_position_idx].halfmove_clock *= 10;
