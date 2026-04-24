@@ -1,0 +1,13 @@
+add_executable(tests)
+target_link_libraries(tests
+	PRIVATE
+		chess_engine)
+target_link_libraries(tests
+	PRIVATE
+		utils)
+target_sources(tests
+	PRIVATE
+		main.cpp)
+target_sources(tests
+	PRIVATE
+		perft_tests.cpp)

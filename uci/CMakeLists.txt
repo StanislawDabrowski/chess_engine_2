@@ -1,0 +1,10 @@
+add_executable(uci)
+target_link_libraries(uci
+	PRIVATE
+		chess_engine)
+target_link_libraries(uci
+	PRIVATE
+	utils)
+target_sources(uci
+	PRIVATE
+		main.cpp)
