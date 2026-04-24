@@ -1,6 +1,7 @@
 #pragma once
 #include "Board.h"
 #include "MoveGenerator.h"
+#include "StaticEval.h"
 
 
 class Engine
@@ -11,6 +12,7 @@ private:
 public:
 	Board board;
 	MoveGenerator mg;
+	StaticEval se;
 
 	Engine();
 	template<Color color>
