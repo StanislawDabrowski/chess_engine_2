@@ -19,7 +19,7 @@ private:
 	void generate_relevant_blockers_and_square_blockers();	
 	void generate_square_bolckers();
 	template<uint8_t castle_type>
-	bool can_castle();
+	bool can_castle();//0 - white kingside, 1 - white queenside, 2 - black kingside, 3 - black queenside
 	void add_legal_move(const Move move);
 public:
 
@@ -78,6 +78,7 @@ public:
 	void generate_pseudo_legal_moves();
 	template<Color color>
 	void filter_pseudo_legal_moves();
-	bool can_castle(uint8_t castle_type);//0 - white kingside, 1 - white queenside, 2 - black kingside, 3 - black queenside
+	template<Color color>
+	bool in_check() const;
 };
 

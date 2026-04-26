@@ -874,7 +874,36 @@ void MoveGenerator::filter_pseudo_legal_moves()
 }
 
 
+template<Color color>
+bool MoveGenerator::in_check() const
+{
+	Color opp = color == White ? Black : White;
+	size_t king_square = std::countr_zero(board->positions_stack[board->current_position_idx].pieces[color][King]);
+	Bitboard opponent_pawns = board->positions_stack[board->current_position_idx].pieces[opp][Pawn];
+	if (opponent_pawns & pawn_attack_tables[static_cast<int>(color)][king_square])
+		return true;
+	Bitboard opponent_knights = board->positions_stack[board->current_position_idx].pieces[opp][Knight];
+	if (opponent_knights & knight_attack_tables[king_square])
+		return true;
+	Bitboard opponent_bishops = board->positions_stack[board->current_position_idx].pieces[opp][Bishop];
+	Bitboard opponent_rooks = board->positions_stack[board->current_position_idx].pieces[opp][Rook];
+	Bitboard opponent_queens = board->positions_stack[board->current_position_idx].pieces[opp][Queen];
+	uint64_t index = ((board->positions_stack[board->current_position_idx].all_pieces & bishop_relevant_blockers[king_square]) * bishop_magic_numbers[king_square]) >> (64 - std::popcount(bishop_relevant_blockers[king_square]));
+	Bitboard bishop_attacks = bishop_attack_tables[king_square][index];
+	if (bishop_attacks & (opponent_bishops | opponent_queens))
+		return true;
+	index = ((board->positions_stack[board->current_position_idx].all_pieces & rook_relevant_blockers[king_square]) * rook_magic_numbers[king_square]) >> (64 - std::popcount(rook_relevant_blockers[king_square]));
+	Bitboard rook_attacks = rook_attack_tables[king_square][index];
+	if (rook_attacks & (opponent_rooks | opponent_queens))
+		return true;
+	return false;
+}
+
+
 template void MoveGenerator::generate_pseudo_legal_moves<White>();
 template void MoveGenerator::generate_pseudo_legal_moves<Black>();
 template void MoveGenerator::filter_pseudo_legal_moves<White>();
 template void MoveGenerator::filter_pseudo_legal_moves<Black>();
+
+template bool MoveGenerator::in_check<White>() const;
+template bool MoveGenerator::in_check<Black>() const;
