@@ -2,21 +2,22 @@
 #include "Board.h"
 #include "MoveGenerator.h"
 #include "StaticEval.h"
+#include <type_traits>
 
 
 class Engine
 {
-private:
-
-
 public:
 	Board board;
 	MoveGenerator mg;
 	StaticEval se;
 
+	static constexpr int16_t MAX_EVAL = 32767;
+	static constexpr int16_t MIN_EVAL = -32767;//needs to be -32767 so -MIN_EVAL is MAX_EVAL, not itself, which due to integer overflow would probably (it's UB), be the case
+
 	Engine();
 	template<Color color>
 	uint64_t perft(uint8_t depth);
-	template<Color color>
-	std::pair<Move, uint16_t> search(uint8_t depth);
+	template<Color color, bool root = false>//if root, return a pair of the best move and evaluation, otherwise return only the evaluation. Made that way to overheadlessly have only 1 definition of the search function for both root and non-root calls.
+	std::conditional_t<root, std::pair<Move, int16_t>, int16_t> search(uint8_t depth);//std::conditional_t evaluates at compile and returns the first type if the condition is true and the second type if the condition is false.
 };

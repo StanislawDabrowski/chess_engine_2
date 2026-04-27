@@ -57,12 +57,35 @@ void go_command_function(std::vector<std::string> args)
 	}
 	else
 	{
-		std::pair<Move, uint16_t> search_result;
+		int16_t depth = -1;
+		for (int i = 0;i<args.size();++i)
+		{
+			if (args[i] == "depth")
+			{
+				++i;
+				if (i < args.size())
+				{
+					depth = std::stoi(args[i]);
+				}
+				else
+				{
+					std::cout << "No depth specified after 'depth'" << std::endl;
+					return;
+				}
+			}
+		}
+		if (depth == -1)
+		{
+			std::cout << "No depth specified" << std::endl;
+			return;
+		}
+		std::pair<Move, int16_t> search_result;
 		if (engine.board.side_to_move == White)
-			search_result = engine.search<White>(0);
+			search_result = engine.search<White, true>(depth);
 		else
-			search_result = engine.search<Black>(0);
+			search_result = engine.search<Black, true>(depth);
 		std::cout << "bestmove " << Utils::move_to_string(search_result.first) << std::endl;
+		std::cout << "score " << search_result.second << std::endl;
 
 
 	}
