@@ -41,14 +41,14 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 		else
 			eval = 0;
 		if constexpr (root)
-			return std::pair<Move, int16_t>(0, eval);
+			return std::pair<Move, int16_t>(0, color == White ? eval : -eval);
 		else
 			return eval;
 	}
 	if (depth == 0)
 	{
 		if constexpr (root)
-			return std::pair<Move, int16_t>(0, se.evaluate());
+			return std::pair<Move, int16_t>(0, color == White ? se.evaluate() : -se.evaluate());
 		else
 			return se.evaluate();
 	}
@@ -67,7 +67,7 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 		board.unmake_move();
 	}
 	if constexpr (root)
-		return std::pair<Move, int16_t>(best_move, best_score);
+		return std::pair<Move, int16_t>(best_move, color == White ? best_score : -best_score);
 	else
 		return best_score;
 }
