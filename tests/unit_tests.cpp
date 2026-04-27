@@ -5,11 +5,14 @@
 #include "MoveGenerator.h"
 
 bool terminate_on_failure = false;
+bool any_test_failed = false;
 
 void run_all_tests(bool terminate_on_failure_arg)
 {
 	terminate_on_failure = terminate_on_failure_arg;
 	MoveGeneratorTests::in_check_test();
+	if (!any_test_failed)
+		std::cout << "All tests passed" << std::endl;
 }
 
 void MoveGeneratorTests::in_check_test()
@@ -50,7 +53,8 @@ void MoveGeneratorTests::in_check_test()
 			result = move_generator.in_check<Black>();
 		if (result != test_cases[i].expected)
 		{
-			std::cout << "Test case " << i << " failed: input = " << test_cases[i].input << ", expected = " << test_cases[i].expected << ", got = " << result << std::endl;
+			std::cout << "in_check: test case " << i << " failed: input = " << test_cases[i].input << ", expected = " << test_cases[i].expected << ", got = " << result << std::endl;
+			any_test_failed = true;
 			if (terminate_on_failure)
 				exit(1);
 		}
