@@ -58,6 +58,7 @@ void go_command_function(std::vector<std::string> args)
 	else
 	{
 		int16_t depth = -1;
+		bool count_searched_nodes = false;
 		for (int i = 0;i<args.size();++i)
 		{
 			if (args[i] == "depth")
@@ -73,6 +74,15 @@ void go_command_function(std::vector<std::string> args)
 					return;
 				}
 			}
+			else if (args[i] == "count_nodes")
+			{
+				count_searched_nodes = true;
+			}
+			else
+			{
+				std::cout << "Unknown argument: " << args[i] << std::endl;
+				return;
+			}
 		}
 		if (depth == -1)
 		{
@@ -80,12 +90,29 @@ void go_command_function(std::vector<std::string> args)
 			return;
 		}
 		std::pair<Move, int16_t> search_result;
+		if (count_searched_nodes)
+			engine.nodes_searched = 0;
 		if (engine.board.side_to_move == White)
-			search_result = engine.search<White, true>(depth);
+		{
+			if (count_searched_nodes)
+				search_result = engine.search<White, true, true>(depth);
+			else
+				search_result = engine.search<White, true, false>(depth);
+		}
 		else
-			search_result = engine.search<Black, true>(depth);
+		{
+			if (count_searched_nodes)
+				search_result = engine.search<Black, true, true>(depth);
+			else
+				search_result = engine.search<Black, true, false>(depth);
+		}
 		std::cout << "bestmove " << Utils::move_to_string(search_result.first) << std::endl;
 		std::cout << "score " << search_result.second << std::endl;
+		if (count_searched_nodes)
+		{
+			std::cout << "nodes searched " << engine.nodes_searched << std::endl;
+			engine.nodes_searched = 0;
+		}
 
 
 	}

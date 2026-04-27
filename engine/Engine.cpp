@@ -6,6 +6,7 @@ Engine::Engine()
 	:board(), mg(&board), se(&board)
 {
 	mg.initialize_attack_tables();
+	nodes_searched = 0;
 }
 
 template<Color color>
@@ -26,9 +27,11 @@ uint64_t Engine::perft(uint8_t depth)
 
 }
 
-template<Color color, bool root>
+template<Color color, bool root, bool count_searched_nodes>
 std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8_t depth)
 {
+	if constexpr (count_searched_nodes)
+		++nodes_searched;
 	//negmax
 	mg.generate_pseudo_legal_moves<color>();
 	mg.filter_pseudo_legal_moves<color>();
@@ -57,7 +60,7 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 	for (int i = 0;i<board.positions_stack[board.current_position_idx].legal_move_next_idx;++i)
 	{
 		board.make_move(board.positions_stack[board.current_position_idx].legal_moves[i]);
-		int16_t score = -search<color==White ? Black : White, false>(depth - 1);
+		int16_t score = -search<color==White ? Black : White, false, count_searched_nodes>(depth - 1);
 		if (score > best_score)
 		{
 			best_score = score;
@@ -74,6 +77,7 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 
 
 
+
 template uint64_t Engine::perft<White>(uint8_t depth);
 template uint64_t Engine::perft<Black>(uint8_t depth);
 
@@ -81,3 +85,7 @@ template std::pair<Move, int16_t> Engine::search<White, true>(uint8_t depth);
 template std::pair<Move, int16_t> Engine::search<Black, true>(uint8_t depth);
 template int16_t Engine::search<White, false>(uint8_t depth);
 template int16_t Engine::search<Black, false>(uint8_t depth);
+template std::pair<Move, int16_t> Engine::search<White, true, true>(uint8_t depth);
+template std::pair<Move, int16_t> Engine::search<Black, true, true>(uint8_t depth);
+template int16_t Engine::search<White, false, true>(uint8_t depth);
+template int16_t Engine::search<Black, false, true>(uint8_t depth);
