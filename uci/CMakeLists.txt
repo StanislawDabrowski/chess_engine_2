@@ -1,7 +1,7 @@
 add_executable(uci)
 target_link_libraries(uci
 	PRIVATE
-		chess_engine)
+		engine)
 target_link_libraries(uci
 	PRIVATE
 	utils)

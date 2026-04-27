@@ -2,7 +2,7 @@ add_library(utils)
 
 target_link_libraries(utils
 	PRIVATE
-		chess_engine)
+		engine)
 target_sources(utils
 	PRIVATE
 		"Utils.cpp"

@@ -1,8 +1,8 @@
-add_library(chess_engine)
+add_library(engine)
 
 add_subdirectory(magic_numbers_generation)
 
-target_link_libraries(chess_engine
+target_link_libraries(engine
 	PRIVATE
 		utils)
 
@@ -12,7 +12,7 @@ file(GLOB LIB_SOURCES CONFIGURE_DEPENDS "*.cpp")
 # 3. Find all .h files in the include directory
 file(GLOB LIB_HEADERS CONFIGURE_DEPENDS "*.h")
 
-target_sources(chess_engine
+target_sources(engine
 	PRIVATE
 		${LIB_SOURCES}
 	PUBLIC

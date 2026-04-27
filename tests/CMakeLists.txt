@@ -1,7 +1,7 @@
 add_executable(run_unit_tests)
 target_link_libraries(run_unit_tests
 	PRIVATE
-		chess_engine)
+		engine)
 target_link_libraries(run_unit_tests
 	PRIVATE
 		utils)
@@ -13,7 +13,7 @@ target_sources(run_unit_tests
 add_executable(run_perft_tests)
 target_link_libraries(run_perft_tests
 	PRIVATE
-		chess_engine)
+		engine)
 target_link_libraries(run_perft_tests
 	PRIVATE
 		utils)
