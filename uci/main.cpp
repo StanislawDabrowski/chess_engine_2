@@ -6,6 +6,12 @@
 
 Engine engine = Engine();
 
+bool debug_mode = false;
+
+void do_nothing_command_function(std::vector<std::string> args)
+{
+	//does nothing, for command which for now don't need any implementation, like e.g. ucinewgame
+}
 
 void d_command_function(std::vector<std::string> args)
 {
@@ -16,6 +22,45 @@ void exit_command_function(std::vector<std::string> args)
 {
 	exit(0);
 }
+
+void isready_command_function(std::vector<std::string> args)
+{
+	std::cout << "readyok" << std::endl;
+}
+
+void uci_command_function(std::vector<std::string> args)
+{
+	std::cout << "id name ChessEngine2" << std::endl;
+	std::cout << "id author Avalfortz" << std::endl;
+	std::cout << "uciok" << std::endl;
+}
+
+void debug_command_function(std::vector<std::string> args)
+{
+	bool value_provided = false;
+	for (int i = 0;i<args.size();++i)
+	{
+		if (args[i]=="on")
+		{
+			debug_mode = true;
+			value_provided = true;
+			break;
+		}
+		else if (args[i]=="off")
+		{
+			debug_mode = false;
+			value_provided = true;
+			break;
+		}
+	}
+	if (!value_provided)
+	{
+		std::cout << "No value provided for debug command. Use 'debug on' or 'debug off'." << std::endl;
+		return;
+	}
+	std::cout << "Debug mode " << (debug_mode ? "enabled" : "disabled") << std::endl;
+}
+
 
 void go_command_function(std::vector<std::string> args)
 {
@@ -58,7 +103,6 @@ void go_command_function(std::vector<std::string> args)
 	else
 	{
 		int16_t depth = -1;
-		bool count_searched_nodes = false;
 		for (int i = 0;i<args.size();++i)
 		{
 			if (args[i] == "depth")
@@ -74,15 +118,6 @@ void go_command_function(std::vector<std::string> args)
 					return;
 				}
 			}
-			else if (args[i] == "count_nodes")
-			{
-				count_searched_nodes = true;
-			}
-			else
-			{
-				std::cout << "Unknown argument: " << args[i] << std::endl;
-				return;
-			}
 		}
 		if (depth == -1)
 		{
@@ -90,27 +125,27 @@ void go_command_function(std::vector<std::string> args)
 			return;
 		}
 		std::pair<Move, int16_t> search_result;
-		if (count_searched_nodes)
+		if (debug_mode)
 			engine.nodes_searched = 0;
 		if (engine.board.side_to_move == White)
 		{
-			if (count_searched_nodes)
+			if (debug_mode)
 				search_result = engine.search<White, true, true>(depth);
 			else
 				search_result = engine.search<White, true, false>(depth);
 		}
 		else
 		{
-			if (count_searched_nodes)
+			if (debug_mode)
 				search_result = engine.search<Black, true, true>(depth);
 			else
 				search_result = engine.search<Black, true, false>(depth);
 		}
 		std::cout << "bestmove " << Utils::move_to_string(search_result.first) << std::endl;
 		std::cout << "score " << search_result.second << std::endl;
-		if (count_searched_nodes)
+		if (debug_mode)
 		{
-			std::cout << "nodes searched " << engine.nodes_searched << std::endl;
+			std::cout << "nodes searched: " << engine.nodes_searched << std::endl;
 			engine.nodes_searched = 0;
 		}
 
@@ -118,8 +153,7 @@ void go_command_function(std::vector<std::string> args)
 	}
 }
 void position_command_function(std::vector<std::string> args)
-{
-	for (int i = 0;i<args.size();++i)
+{ for (int i = 0;i<args.size();++i)
 	{
 		if (args[i]=="fen")
 		{
@@ -190,7 +224,11 @@ int main()
 		{"quit", exit_command_function},
 		{"q", exit_command_function},
 		{"go", go_command_function},
-		{"position", position_command_function}
+		{"position", position_command_function},
+		{"isready", isready_command_function},
+		{"uci", uci_command_function},
+		{"debug", debug_command_function},
+		{"ucinewgame", do_nothing_command_function},
 	};
 	
 
