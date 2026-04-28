@@ -55,7 +55,7 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 		else
 			return se.evaluate<color>();
 	}
-	int16_t best_score = MIN_EVAL;
+	int16_t best_score = MIN_EVAL - 1;//MIN_EVAL is -2^15+1, so MIN_EVAL-1 does not wrap around. Is set to MIN_EVAL-1 for best_moves to be always initialized
 	Move best_move;	
 	for (int i = 0;i<board.positions_stack[board.current_position_idx].legal_move_next_idx;++i)
 	{
