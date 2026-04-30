@@ -2,37 +2,67 @@
 #include "Utils.h"
 #include <ostream>
 #include <unordered_map>
+#include <unordered_set>
 #include <functional>
 #include <thread>
 #include <atomic>
 #include <syncstream>
 
 
+
 Engine engine = Engine();
 Board board_copy;
 std::mutex engine_mutex;
+std::mutex board_copy_mutex;
 
 std::atomic<bool> debug_mode = false;
+
+
+std::unordered_set<std::thread::id> running_threads;
+std::mutex running_threads_mutex;
+std::mutex running_thread_being_added_mutex;//locked before starting a thread and unclocked after adding an id. The thread locks before constructing the HandleRunningThread.
+
+class HandleRunningThread
+{
+	public:
+	HandleRunningThread()
+	{
+		running_thread_being_added_mutex.lock();
+		running_thread_being_added_mutex.unlock();
+	}
+	~HandleRunningThread()
+	{
+		running_threads_mutex.lock();
+		running_threads.erase(std::this_thread::get_id());
+		running_threads_mutex.unlock();
+	}
+};
 
 void do_nothing_command_function(std::vector<std::string> args)
 {
 	//does nothing, for command which for now don't need any implementation, like e.g. ucinewgame
+	HandleRunningThread handle_thread;
 }
 
 void d_command_function(std::vector<std::string> args)
 {
+	HandleRunningThread handle_thread;
 	std::osyncstream out(std::cout);//necessary to pass the out as an lvalue not rvalue
+	board_copy_mutex.lock();
 	Utils::display_board(&board_copy, out);
+	board_copy_mutex.unlock();
 }
 
 void isready_command_function(std::vector<std::string> args)
 {
+	HandleRunningThread handle_thread;
 	std::osyncstream out(std::cout);
 	out << "readyok" << std::endl;
 }
 
 void uci_command_function(std::vector<std::string> args)
 {
+	HandleRunningThread handle_thread;
 	std::osyncstream out(std::cout);
 	out << "id name ChessEngine2" << std::endl;
 	out << "id author Avalfortz" << std::endl;
@@ -41,6 +71,7 @@ void uci_command_function(std::vector<std::string> args)
 
 void debug_command_function(std::vector<std::string> args)
 {
+	HandleRunningThread handle_thread;
 	std::osyncstream out(std::cout);
 	bool value_provided = false;
 	for (int i = 0;i<args.size();++i)
@@ -69,6 +100,7 @@ void debug_command_function(std::vector<std::string> args)
 
 void go_command_function(std::vector<std::string> args)
 {
+	HandleRunningThread handle_thread;
 	std::osyncstream out(std::cout);
 	out << std::emit_on_flush;
 	if (args.size() >= 2 && args[0]=="perft")
@@ -165,6 +197,7 @@ void go_command_function(std::vector<std::string> args)
 }
 void position_command_function(std::vector<std::string> args)
 {
+	HandleRunningThread handle_thread;
 	engine_mutex.lock();
 	for (int i = 0;i<args.size();++i)
 	{
@@ -189,9 +222,13 @@ void position_command_function(std::vector<std::string> args)
 		}
 		
 	}
+	board_copy_mutex.lock();
 	board_copy = engine.board;
+	board_copy_mutex.unlock();
 	engine_mutex.unlock();
 }
+
+
 
 std::vector<std::string> tokenize(const std::string& input)
 {
@@ -232,7 +269,7 @@ std::vector<std::string> tokenize(const std::string& input)
 int main()
 {
 	Utils::initialize_board(&engine.board);
-	board_copy = engine.board;
+	board_copy = engine.board;//no need to lock here since no other thread is running yet
 	std::unordered_map<std::string, std::function<void(std::vector<std::string>)>> commands_functions = {
 		{"d", d_command_function},
 		{"go", go_command_function},
@@ -243,12 +280,12 @@ int main()
 		{"ucinewgame", do_nothing_command_function},
 	};
 	
+	std::unordered_map<std::thread::id, std::thread> threads;
 	std::osyncstream out(std::cout);
 	std::string input_line;
 	std::vector<std::string> tokens;
 	while (true)
 	{
-		
 		std::getline(std::cin, input_line);
 		tokens = tokenize(input_line);
 		if (tokens.empty())
@@ -259,15 +296,45 @@ int main()
 		}
 		if (commands_functions.contains(tokens[0]))
 		{
+			running_thread_being_added_mutex.lock();
 			std::thread t(commands_functions[tokens[0]], std::vector<std::string>(tokens.begin()+1, tokens.end()));
-			t.detach();
+			running_threads_mutex.lock();
+			running_threads.insert(t.get_id());
+			running_threads_mutex.unlock();
+			running_thread_being_added_mutex.unlock();
+			threads.emplace(t.get_id(), std::move(t));
 		}
 		else
 		{
 			out << "Unknown command: " << tokens[0] << std::endl;
 			continue;
 		}
+		//clean up finished threads
+		for (auto it = threads.begin(); it != threads.end();)
+		{
+			running_threads_mutex.lock();
+			if (!running_threads.contains(it->first))
+			{
+				running_threads_mutex.unlock();
+				if (it->second.joinable())
+					it->second.join();
+				it = threads.erase(it);
+			}
+			else
+			{
+				running_threads_mutex.unlock();
+				++it;
+			}
+		}
+
 	}
 
+	//join all threads
+	for (auto it = threads.begin(); it != threads.end(); ++it)
+	{
+		if (it->second.joinable())
+			it->second.join();
+	}
+	
 	return 0;
 }
