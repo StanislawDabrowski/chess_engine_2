@@ -212,7 +212,30 @@ void position_command_function(std::vector<std::string> args)
 		if (args[i]=="fen")
 		{
 			++i;
-			engine.board.load_fen(args[i]);
+			std::string fen;
+			if (i+5<args.size())//posibly fen given without quotes
+			{
+				if (args[i+1]=="b" || args[i+1]=="w")//we assume fen is given without quotes since next token matches fen color indication
+				{
+					fen = args[i] + " " + args[i+1] + " " + args[i+2] + " " + args[i+3] + " " + args[i+4] + " " + args[i+5];
+					i+=5;
+				}
+				else//fen in quotes
+				{
+					fen = args[i];
+				}
+			}
+			else//fen in quotes
+			{
+				fen = args[i];
+			}
+			//convert all whitespace characters in fen to space
+			for (char& c : fen)
+			{
+				if (std::isspace(c))
+					c = ' ';
+			}
+			engine.board.load_fen(fen);
 		}
 		else if (args[i]=="startpos")
 		{
