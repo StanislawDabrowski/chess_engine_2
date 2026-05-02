@@ -107,7 +107,16 @@ void go_command_function(std::vector<std::string> args)
 	out << std::emit_on_flush;
 	if (args.size() >= 2 && args[0]=="perft")
 	{
-		uint8_t depth = std::stoi(args[1]);
+		uint8_t depth;
+		try
+		{
+			depth = std::stoi(args[1]);
+		}
+		catch (...)
+		{
+			return;
+		}
+		
 		engine_mutex.lock();
 		if (engine.board.side_to_move == White)
 		{
@@ -152,7 +161,15 @@ void go_command_function(std::vector<std::string> args)
 				++i;
 				if (i < args.size())
 				{
-					depth_max = std::stoi(args[i]);
+					try
+					{
+						depth_max = std::stoi(args[i]);
+					}
+					catch (...)
+					{
+						return;
+					}
+					
 				}
 				else
 				{
@@ -236,7 +253,7 @@ std::vector<std::string> tokenize(const std::string& input)
 			in_quotes = !in_quotes;
 			continue;
 		}
-		if (c == ' ' && !in_quotes)
+		if (std::isspace(c) && !in_quotes)
 		{
 			if (!temp.empty())
 			{
@@ -273,6 +290,7 @@ int main()
 	
 	std::unordered_map<std::thread::id, std::thread> threads;
 	std::osyncstream out(std::cout);
+	out << std::emit_on_flush;
 	std::string input_line;
 	std::vector<std::string> tokens;
 	while (true)
