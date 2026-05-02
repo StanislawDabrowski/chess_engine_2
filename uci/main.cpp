@@ -7,6 +7,8 @@
 #include <thread>
 #include <atomic>
 #include <syncstream>
+#include <chrono>
+#include <cmath>
 
 
 
@@ -142,7 +144,7 @@ void go_command_function(std::vector<std::string> args)
 	}
 	else
 	{
-		int16_t depth = -1;
+		int16_t depth_max = -1;
 		for (int i = 0;i<args.size();++i)
 		{
 			if (args[i] == "depth")
@@ -150,7 +152,7 @@ void go_command_function(std::vector<std::string> args)
 				++i;
 				if (i < args.size())
 				{
-					depth = std::stoi(args[i]);
+					depth_max = std::stoi(args[i]);
 				}
 				else
 				{
@@ -159,37 +161,26 @@ void go_command_function(std::vector<std::string> args)
 				}
 			}
 		}
-		if (depth == -1)
+		if (depth_max == -1)
 		{
 			out << "No depth specified" << std::endl;
 			return;
 		}
 		std::pair<Move, int16_t> search_result;
 		engine_mutex.lock();
-		bool debug_mode_local = debug_mode.load(std::memory_order_relaxed);//made to avoid debug_mode changing in the middle of the search causing inconsistent debug output
-		if (debug_mode_local)
-			engine.nodes_searched = 0;
-		if (engine.board.side_to_move == White)
+		auto start_time = std::chrono::high_resolution_clock::now();
+		long time_passed;
+		for (uint8_t depth = 1;depth<=depth_max;++depth)
 		{
-			if (debug_mode_local)
+			engine.nodes_searched = 0;
+			if (engine.board.side_to_move == White)
 				search_result = engine.search<White, true, true>(depth);
 			else
-				search_result = engine.search<White, true, false>(depth);
-		}
-		else
-		{
-			if (debug_mode_local)
 				search_result = engine.search<Black, true, true>(depth);
-			else
-				search_result = engine.search<Black, true, false>(depth);
+			time_passed = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
+			out << "info depth " << static_cast<int>(depth) << " score cp " << search_result.second << " nodes " << engine.nodes_searched << " nps " << (time_passed > 0 ? engine.nodes_searched * 1'000'000 / time_passed : 0) << " time " << static_cast<int>(std::round((static_cast<float>(time_passed)/1000.0))) << std::endl;
 		}
 		out << "bestmove " << Utils::move_to_string(search_result.first) << std::endl;
-		out << "score " << search_result.second << std::endl;
-		if (debug_mode_local)
-		{
-			out << "nodes searched: " << engine.nodes_searched << std::endl;
-			engine.nodes_searched = 0;
-		}
 		engine_mutex.unlock();
 
 
