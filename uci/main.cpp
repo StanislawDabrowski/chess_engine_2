@@ -59,8 +59,17 @@ void d_command_function(std::vector<std::string> args)
 void isready_command_function(std::vector<std::string> args)
 {
 	HandleRunningThread handle_thread;
-	engine_mutex.lock();
-	engine_mutex.unlock();
+	while (true)
+	{
+		running_threads_mutex.lock();
+		if (running_threads.size() == 1)//only the current thread is running
+		{
+			running_threads_mutex.unlock();
+			break;
+		}
+		running_threads_mutex.unlock();
+		std::this_thread::sleep_for(std::chrono::milliseconds(3));//arbitrary small sleep to avoid busy waiting without making the engine unresponsive for too long
+	}
 	std::osyncstream out(std::cout);
 	out << "readyok" << std::endl;
 }
@@ -88,8 +97,7 @@ void debug_command_function(std::vector<std::string> args)
 			break;
 		}
 		else if (args[i]=="off")
-		{
-			debug_mode.store(false, std::memory_order_relaxed);
+		{ debug_mode.store(false, std::memory_order_relaxed);
 			value_provided = true;
 			break;
 		}
@@ -436,6 +444,7 @@ int main()
 	out << std::emit_on_flush;
 	std::string input_line;
 	std::vector<std::string> tokens;
+	uint32_t command_count = 0;
 	while (true)
 	{
 		std::getline(std::cin, input_line);
@@ -455,6 +464,7 @@ int main()
 			running_threads_mutex.unlock();
 			running_thread_being_added_mutex.unlock();
 			threads.emplace(t.get_id(), std::move(t));
+			++command_count;
 		}
 		else
 		{
