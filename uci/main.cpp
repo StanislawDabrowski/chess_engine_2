@@ -59,6 +59,8 @@ void d_command_function(std::vector<std::string> args)
 void isready_command_function(std::vector<std::string> args)
 {
 	HandleRunningThread handle_thread;
+	engine_mutex.lock();
+	engine_mutex.unlock();
 	std::osyncstream out(std::cout);
 	out << "readyok" << std::endl;
 }
