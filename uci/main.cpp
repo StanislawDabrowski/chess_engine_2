@@ -1,5 +1,6 @@
 #include "Engine.h"
 #include "Utils.h"
+#include "TimeManagement.h"
 #include <ostream>
 #include <unordered_map>
 #include <unordered_set>
@@ -154,6 +155,7 @@ void go_command_function(std::vector<std::string> args)
 	else
 	{
 		int16_t depth_max = -1;
+		uint64_t wtime = -1, btime = -1, winc = -1, binc = -1;
 		for (int i = 0;i<args.size();++i)
 		{
 			if (args[i] == "depth")
@@ -177,26 +179,142 @@ void go_command_function(std::vector<std::string> args)
 					return;
 				}
 			}
+			else if (args[i] == "wtime")
+			{
+				++i;
+				if (i < args.size())
+				{
+					try
+					{
+						wtime = std::stoull(args[i]);
+					}
+					catch (...)
+					{
+						return;
+					}
+					
+				}
+				else
+				{
+					out << "No wtime specified after 'wtime'" << std::endl;
+					return;
+				}
+			}
+			else if (args[i] == "btime")
+			{
+				++i;
+				if (i < args.size())
+				{
+					try
+					{
+						btime = std::stoull(args[i]);
+					}
+					catch (...)
+					{
+						return;
+					}
+					
+				}
+				else
+				{
+					out << "No btime specified after 'btime'" << std::endl;
+					return;
+				}
+			}
+			else if (args[i] == "winc")
+			{
+				++i;
+				if (i < args.size())
+				{
+					try
+					{
+						winc = std::stoull(args[i]);
+					}
+					catch (...)
+					{
+						return;
+					}
+					
+				}
+				else
+				{
+					out << "No winc specified after 'winc'" << std::endl;
+					return;
+				}
+			}
+			else if (args[i] == "binc")
+			{
+				++i;
+				if (i < args.size())
+				{
+					try
+					{
+						binc = std::stoull(args[i]);
+					}
+					catch (...)
+					{
+						return;
+					}
+					
+				}
+				else
+				{
+					out << "No binc specified after 'binc'" << std::endl;
+					return;
+				}
+			}
 		}
-		if (depth_max == -1)
+		if (depth_max == -1 && (wtime == -1 || btime == -1))//neither depth nor time control specified
 		{
-			out << "No depth specified" << std::endl;
 			return;
 		}
 		std::pair<Move, int16_t> search_result;
 		engine_mutex.lock();
-		auto start_time = std::chrono::high_resolution_clock::now();
-		long time_passed;
-		for (uint8_t depth = 1;depth<=depth_max;++depth)
+		long time_passed = -1;
+		if (depth_max != -1)
 		{
-			engine.nodes_searched = 0;
-			if (engine.board.side_to_move == White)
-				search_result = engine.search<White, true, true>(depth);
-			else
-				search_result = engine.search<Black, true, true>(depth);
-			time_passed = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
-			out << "info depth " << static_cast<int>(depth) << " score cp " << search_result.second << " nodes " << engine.nodes_searched << " nps " << (time_passed > 0 ? engine.nodes_searched * 1'000'000 / time_passed : 0) << " time " << static_cast<int>(std::round((static_cast<float>(time_passed)/1000.0))) << std::endl;
+			auto start_time = std::chrono::high_resolution_clock::now();
+			for (uint8_t depth = 1;depth<=depth_max;++depth)
+			{
+				engine.nodes_searched = 0;
+				if (engine.board.side_to_move == White)
+					search_result = engine.search<White, true, true>(depth);
+				else
+					search_result = engine.search<Black, true, true>(depth);
+				time_passed = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
+				out << "info depth " << static_cast<int>(depth) << " score cp " << search_result.second << " nodes " << engine.nodes_searched << " nps " << (time_passed > 0 ? engine.nodes_searched * 1'000'000 / time_passed : 0) << " time " << static_cast<int>(std::round((static_cast<float>(time_passed)/1000.0))) << std::endl;
+			}
 		}
+		else
+		{
+			if (winc == -1)
+				winc = 0;
+			if (binc == -1)
+				binc = 0;
+			uint64_t time_to_think = get_time_to_think_in_ms(&engine, wtime, btime, winc, binc);
+			auto start_time = std::chrono::high_resolution_clock::now();
+			float effective_branching_factor_estimate = 1;
+			long previous_time_passed = -1;
+			for (uint8_t depth = 1;true;++depth)
+			{
+				engine.nodes_searched = 0;
+				if (engine.board.side_to_move == White)
+					search_result = engine.search<White, true, true>(depth);
+				else
+					search_result = engine.search<Black, true, true>(depth);
+				previous_time_passed = time_passed;
+				time_passed = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
+				if (previous_time_passed != -1)
+				{
+					effective_branching_factor_estimate = time_passed/static_cast<float>(previous_time_passed);
+				}
+				out << "info depth " << static_cast<int>(depth) << " score cp " << search_result.second << " nodes " << engine.nodes_searched << " nps " << (time_passed > 0 ? engine.nodes_searched * 1'000'000 / time_passed : 0) << " time " << static_cast<int>(std::round((static_cast<float>(time_passed)/1000.0))) << std::endl;
+				long estimated_time_for_next_depth = time_passed * effective_branching_factor_estimate;
+				if (estimated_time_for_next_depth * 1.2 > time_to_think * 1000)//*1000 is neccessary we measure time in microseconds but time_to_think is in milliseconds
+					break;
+			}
+		}
+		
 		out << "bestmove " << Utils::move_to_string(search_result.first) << std::endl;
 		engine_mutex.unlock();
 
