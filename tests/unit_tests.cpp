@@ -15,7 +15,6 @@ static char dummy = (std::exit(1), 0)
 #endif
 
 bool terminate_on_failure = false;
-bool any_test_failed = false;
 
 std::string get_executable_file_directory_path()
 {
@@ -45,8 +44,6 @@ void run_all_tests(bool terminate_on_failure_arg)
 	MoveGeneratorTests::in_check_test();
 	BoardTests::zobrist_hashing_test(get_executable_file_directory_path() + "/ethereal_fen_set.fen");
 	BoardTests::repetition_detection_test(get_executable_file_directory_path() + "/draw_by_repetition_test_cases.txt");
-	if (!any_test_failed)
-		std::cout << "All tests passed" << std::endl;
 }
 
 void MoveGeneratorTests::in_check_test()
@@ -78,6 +75,7 @@ void MoveGeneratorTests::in_check_test()
 	MoveGenerator move_generator(&board);
 	move_generator.initialize_attack_tables();
 	bool result;
+	bool any_test_failed = false;
 	for (int i = 0; i < sizeof(test_cases) / sizeof(test_cases[0]); ++i)
 	{
 		board.load_fen(test_cases[i].input);
@@ -172,6 +170,7 @@ namespace hash_tests
 void BoardTests::zobrist_hashing_test(std::string file_with_fens)
 {
 	constexpr uint8_t depth = 4;
+	bool any_test_failed = false;
 	std::ifstream file(file_with_fens);
 	if (!file.is_open())
 	{
@@ -192,6 +191,7 @@ void BoardTests::zobrist_hashing_test(std::string file_with_fens)
 void BoardTests::repetition_detection_test(std::string file_with_fens_and_moves)
 {
 	std::ifstream file(file_with_fens_and_moves);
+	bool any_test_failed = false;
 	if (!file.is_open())
 	{
 		std::cerr << "Failed to open file: " << file_with_fens_and_moves << std::endl;
