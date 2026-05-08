@@ -9,6 +9,7 @@ struct BoardState
 	Bitboard pieces[2][6]; // [color][piece_type]
 	Bitboard all_pieces_types[2];//all pieces of a specified color
 	Bitboard all_pieces;
+	uint64_t hash;
 	uint8_t legal_move_next_idx;
 	uint8_t en_passant_square; // 0 if no en passant square
 	uint8_t halfmove_clock; // for fifty-move rule

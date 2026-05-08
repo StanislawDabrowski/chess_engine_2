@@ -1,3 +1,8 @@
+configure_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/ethereal_fen_set.fen
+	${CMAKE_CURRENT_BINARY_DIR}/ethereal_fen_set.fen
+	COPYONLY)
+
 add_executable(run_unit_tests)
 target_link_libraries(run_unit_tests
 	PRIVATE
