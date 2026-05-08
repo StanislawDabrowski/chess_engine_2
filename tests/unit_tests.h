@@ -20,4 +20,5 @@ namespace MoveGeneratorTests
 namespace BoardTests
 {
 	void zobrist_hashing_test(std::string file_with_fens);
+	void repetition_detection_test(std::string file_with_fens_and_moves);
 }

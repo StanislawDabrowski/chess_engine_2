@@ -2,6 +2,10 @@ configure_file(
 	${CMAKE_CURRENT_SOURCE_DIR}/ethereal_fen_set.fen
 	${CMAKE_CURRENT_BINARY_DIR}/ethereal_fen_set.fen
 	COPYONLY)
+configure_file(
+	${CMAKE_CURRENT_SOURCE_DIR}/draw_by_repetition_test_cases.txt
+	${CMAKE_CURRENT_BINARY_DIR}/draw_by_repetition_test_cases.txt
+	COPYONLY)
 
 add_executable(run_unit_tests)
 target_link_libraries(run_unit_tests

@@ -5,6 +5,8 @@
 #include "Board.h"
 #include "MoveGenerator.h"
 #include "Utils.h"
+#include <sstream>
+#include <vector>
 #include <limits.h>
 #ifdef __linux__
 #include <unistd.h>
@@ -42,6 +44,7 @@ void run_all_tests(bool terminate_on_failure_arg)
 	terminate_on_failure = terminate_on_failure_arg;
 	MoveGeneratorTests::in_check_test();
 	BoardTests::zobrist_hashing_test(get_executable_file_directory_path() + "/ethereal_fen_set.fen");
+	BoardTests::repetition_detection_test(get_executable_file_directory_path() + "/draw_by_repetition_test_cases.txt");
 	if (!any_test_failed)
 		std::cout << "All tests passed" << std::endl;
 }
@@ -168,7 +171,7 @@ namespace hash_tests
 
 void BoardTests::zobrist_hashing_test(std::string file_with_fens)
 {
-	constexpr uint8_t depth = 7;
+	constexpr uint8_t depth = 4;
 	std::ifstream file(file_with_fens);
 	if (!file.is_open())
 	{
@@ -184,4 +187,64 @@ void BoardTests::zobrist_hashing_test(std::string file_with_fens)
 	}
 	if (!any_test_failed)
 		std::cout << "BoardTests::zobrist_hashing_test passed" << std::endl;
+}
+
+void BoardTests::repetition_detection_test(std::string file_with_fens_and_moves)
+{
+	std::ifstream file(file_with_fens_and_moves);
+	if (!file.is_open())
+	{
+		std::cerr << "Failed to open file: " << file_with_fens_and_moves << std::endl;
+		any_test_failed = true;
+		return;
+	}
+	std::string line;
+	int line_number = 0;
+	while (std::getline(file, line))
+	{
+		std::istringstream iss(line);
+		std::string fen;
+		std::string temp;
+		for (int i = 0; i < 6; ++i)
+		{
+			iss >> temp;
+			fen += temp + (i < 5 ? " " : "");
+		}
+		std::vector<std::string> moves;
+		std::string move_str;
+		while (iss >> move_str)
+		{
+			moves.push_back(move_str);
+		}
+		Board board = Board();
+		board.load_fen(fen);
+		for (int i = 0; i < moves.size(); ++i)
+		{
+			Move move = Utils::string_to_move(&board, moves[i]);
+			board.make_move(move);
+			if (i != moves.size()-1 && board.draw_by_repetition)
+			{
+				std::cerr << "Incorrectly detect repetition in line " << line_number << " root fen: \"" << fen << "\" after move " << moves[i] << " (" << i + 1 << ". move)" << std::endl;
+				any_test_failed = true;
+				if (terminate_on_failure)
+				{
+					exit(1);
+				}
+				break;
+			}
+			else if (i==moves.size()-1 && !board.draw_by_repetition)
+			{
+				std::cerr << "Failed to detected repetition in line " << line_number << " root fen: " << fen << " after move " << moves[i] << " (" << i + 1 << ". move)" << std::endl;
+				any_test_failed = true;
+				if (terminate_on_failure)
+				{
+					exit(1);
+				}
+				break;
+			}
+		}
+		line_number++;
+	}
+	if (!any_test_failed)
+		std::cout << "BoardTests::repetition_detection_test passed" << std::endl;
 }

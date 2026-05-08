@@ -135,6 +135,7 @@ void Board::load_fen(std::string fen)
 		initial_fullmove_count += fen[i++]-'0';
 	}
 	calculate_hash();
+	draw_by_repetition = false;
 }
 
 void Board::make_move(Move move)
@@ -151,7 +152,6 @@ void Board::make_move(Move move)
 	++current_position_idx;
 
 	uint8_t opp = side_to_move ^ 1;
-	positions_stack[current_position_idx].hash ^= zobrist_side_to_move_hash;
 
 
 	positions_stack[current_position_idx].en_passant_square = 0;
@@ -231,6 +231,22 @@ void Board::make_move(Move move)
 	
 
 	side_to_move ^= 1;
+	positions_stack[current_position_idx].hash ^= zobrist_side_to_move_hash;
+
+	uint8_t repetitions = 0;
+	//check for threefold repetition
+	for (size_t i = current_position_idx-1; i < current_position_idx;--i)//propably i can be initialized to current_position_idx-2 because the last position cannot be the same as the current one. to consider in the future
+	{
+		if (positions_stack[i].hash == positions_stack[current_position_idx].hash)
+		{
+			++repetitions;
+			if (repetitions == 2)
+			{
+				draw_by_repetition = true;
+				break;
+			}
+		}
+	}
 }
 
 void Board::unmake_move()
