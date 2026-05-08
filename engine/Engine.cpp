@@ -33,6 +33,13 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 	if constexpr (count_searched_nodes)
 		++nodes_searched;
 	//negmax with alpha-beta pruning
+	if (board.draw_by_repetition)
+	{
+		if constexpr (root)
+			return std::pair<Move, int16_t>(0, 0);
+		else
+			return 0;
+	}
 	mg.generate_pseudo_legal_moves<color>();
 	mg.filter_pseudo_legal_moves<color>();
 	if (board.positions_stack[board.current_position_idx].legal_move_next_idx == 0)
