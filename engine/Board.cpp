@@ -253,6 +253,7 @@ void Board::unmake_move()
 {
 	--current_position_idx;
 	side_to_move ^= 1;
+	draw_by_repetition = false;
 }
 
 
