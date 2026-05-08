@@ -135,7 +135,7 @@ void Board::load_fen(std::string fen)
 		initial_fullmove_count += fen[i++]-'0';
 	}
 	calculate_hash();
-	draw_by_repetition = false;
+	positions_stack[current_position_idx].draw_by_repetition = false;
 }
 
 void Board::make_move(Move move)
@@ -242,7 +242,7 @@ void Board::make_move(Move move)
 			++repetitions;
 			if (repetitions == 2)
 			{
-				draw_by_repetition = true;
+				positions_stack[current_position_idx].draw_by_repetition = true;
 				break;
 			}
 		}
@@ -253,7 +253,6 @@ void Board::unmake_move()
 {
 	--current_position_idx;
 	side_to_move ^= 1;
-	draw_by_repetition = false;
 }
 
 

@@ -14,4 +14,5 @@ struct BoardState
 	uint8_t en_passant_square; // 0 if no en passant square
 	uint8_t halfmove_clock; // for fifty-move rule
 	uint8_t castling_rights; // bit 0 - white kingside, bit 1 - white queenside, bit 2 - black kingside, bit 3 - black queenside
+	bool draw_by_repetition;
 };

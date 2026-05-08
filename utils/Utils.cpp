@@ -262,7 +262,7 @@ namespace Utils
 		output << "En passant square: " << std::to_string(board->positions_stack[board->current_position_idx].en_passant_square) << "\n";
 		output << "Halfmove clock: " << std::to_string(board->positions_stack[board->current_position_idx].halfmove_clock) << "\n";
 		output << "Fullmove clock: " << std::to_string(board->initial_fullmove_count) << "\n";
-		output << "Draw by repetition: " << (board->draw_by_repetition ? "Yes" : "No") << "\n";
+		output << "Draw by repetition: " << (board->positions_stack[board->current_position_idx].draw_by_repetition ? "Yes" : "No") << "\n";
 
 		for (int rank = 7; rank >= 0; rank--)
 		{

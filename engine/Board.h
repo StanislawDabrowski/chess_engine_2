@@ -15,7 +15,6 @@ public:
 	BoardState positions_stack[MAXIMUM_GAME_LENGTH];
 	size_t current_position_idx;
 	size_t side_to_move; // 0 - white, 1 - black
-	bool draw_by_repetition;
 
 	uint8_t castling_mask[64];
 	uint32_t initial_fullmove_count;

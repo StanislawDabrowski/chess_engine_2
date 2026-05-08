@@ -222,7 +222,7 @@ void BoardTests::repetition_detection_test(std::string file_with_fens_and_moves)
 		{
 			Move move = Utils::string_to_move(&board, moves[i]);
 			board.make_move(move);
-			if (i != moves.size()-1 && board.draw_by_repetition)
+			if (i != moves.size()-1 && board.positions_stack[board.current_position_idx].draw_by_repetition)
 			{
 				std::cerr << "Incorrectly detect repetition in line " << line_number << " root fen: \"" << fen << "\" after move " << moves[i] << " (" << i + 1 << ". move)" << std::endl;
 				any_test_failed = true;
@@ -232,7 +232,7 @@ void BoardTests::repetition_detection_test(std::string file_with_fens_and_moves)
 				}
 				break;
 			}
-			else if (i==moves.size()-1 && !board.draw_by_repetition)
+			else if (i==moves.size()-1 && !board.positions_stack[board.current_position_idx].draw_by_repetition)
 			{
 				std::cerr << "Failed to detected repetition in line " << line_number << " root fen: " << fen << " after move " << moves[i] << " (" << i + 1 << ". move)" << std::endl;
 				any_test_failed = true;
