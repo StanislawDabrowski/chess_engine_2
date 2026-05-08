@@ -60,6 +60,7 @@ namespace Utils
 		board->initial_fullmove_count = 1;
 
 		update_collective_bitboards(board);
+		board->calculate_hash();
 	}
 
 	std::string PieceType_to_string(PieceType piece_type)
@@ -292,6 +293,7 @@ namespace Utils
 		//file letters
 		output << "  a b c d e f g h" << "\n";
 		output << "fen: " << get_fen(board) << "\n";
+		output << "hash: " << std::hex << board->positions_stack[board->current_position_idx].hash << std::dec << "\n";
 		output << "\n";
 		output << std::flush;
 	}

@@ -388,6 +388,51 @@ void position_command_function(std::vector<std::string> args)
 }
 
 
+void fen_command_function(std::vector<std::string> args)
+{
+	HandleRunningThread handle_thread;
+	std::osyncstream out(std::cout);
+	out << std::emit_on_flush;
+	board_copy_mutex.lock();
+	out << Utils::get_fen(&board_copy) << std::endl;
+	board_copy_mutex.unlock();
+}
+
+void hash_command_function(std::vector<std::string> args)
+{
+	HandleRunningThread handle_thread;
+	std::osyncstream out(std::cout);
+	out << std::emit_on_flush;
+	board_copy_mutex.lock();
+	out << std::hex << board_copy.positions_stack[engine.board.current_position_idx].hash << std::dec << std::endl;
+	board_copy_mutex.unlock();
+}
+
+void move_command_function(std::vector<std::string> args)
+{
+	HandleRunningThread handle_thread;
+	if (args.empty())
+		return;
+	engine_mutex.lock();
+	Move move_temp = Utils::string_to_move(&engine.board, args[0]);
+	engine.board.make_move(move_temp);
+	board_copy_mutex.lock();
+	board_copy = engine.board;
+	board_copy_mutex.unlock();
+	engine_mutex.unlock();
+}
+
+void unmove_command_function(std::vector<std::string> args)
+{
+	HandleRunningThread handle_thread;
+	engine_mutex.lock();
+	engine.board.unmake_move();
+	board_copy_mutex.lock();
+	board_copy = engine.board;
+	board_copy_mutex.unlock();
+	engine_mutex.unlock();
+}
+
 
 std::vector<std::string> tokenize(const std::string& input)
 {
@@ -437,6 +482,11 @@ int main()
 		{"uci", uci_command_function},
 		{"debug", debug_command_function},
 		{"ucinewgame", do_nothing_command_function},
+		//non uci commands
+		{"fen", fen_command_function},
+		{"hash", hash_command_function},
+		{"move", move_command_function},
+		{"unmove", unmove_command_function},
 	};
 	
 	std::unordered_map<std::thread::id, std::thread> threads;
