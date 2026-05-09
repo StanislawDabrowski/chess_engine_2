@@ -61,6 +61,7 @@ namespace Utils
 
 		update_collective_bitboards(board);
 		board->calculate_hash();
+		board->positions_stack[board->current_position_idx].draw_by_repetition = false;
 	}
 
 	std::string PieceType_to_string(PieceType piece_type)
