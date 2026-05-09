@@ -33,11 +33,10 @@ int16_t StaticEval::evaluate_mobility()
 
 	score += (std::popcount(single_push) + std::popcount(double_push) + std::popcount(push_promotion)) * mobility_score;
 	score += ((std::popcount(left_captures) + std::popcount(right_captures) + std::popcount(left_capture_promotion) + std::popcount(right_capture_promotion)) * mobility_score) >> 1;//capture posibilities are worth less beacuse moving there without a capture is not possible and most of these are not actually possible at the moment, there is not piece to capture. this is only a special case of pawns
-	score += (std::popcount(single_push) + std::popcount(double_push) + std::popcount(left_captures) + std::popcount(right_captures) + std::popcount(push_promotion) + std::popcount(left_capture_promotion) + std::popcount(right_capture_promotion)) * mobility_score;
 
 	//en passant
 	uint8_t en_passant_square = board->positions_stack[board->current_position_idx].en_passant_square;
-	Bitboard en_passant_mask;
+	Bitboard en_passant_mask;//can be left uninitialized since pawns_left and pawns_right are 0 so AND will yell 0 anyway, and these can be different form 0 only if en_passant_mask get set bofer as well
 	Bitboard pawns_left = 0;
 	Bitboard pawns_right = 0;
 	if (color == Black && en_passant_square >= 16 && en_passant_square < 24)
