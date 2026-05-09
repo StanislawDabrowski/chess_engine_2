@@ -172,7 +172,7 @@ void Board::make_move(Move move)
 		positions_stack[current_position_idx].hash ^= zobrist_pieces_hashes[side_to_move][piece_moved][from_square];
 		positions_stack[current_position_idx].pieces[side_to_move][Utils::MoveType_to_promotion_piece[move_type]] ^= to_mask;
 		positions_stack[current_position_idx].hash ^= zobrist_pieces_hashes[side_to_move][Utils::MoveType_to_promotion_piece[move_type]][to_square];
-		positions_stack[current_position_idx].halfmove_clock = 0;
+		//no need to reset halfmove clock here because it will be reset later for all pawn moves
 	}
 
 	positions_stack[current_position_idx].hash ^= zobrist_castling_hashes[positions_stack[current_position_idx].castling_rights];
@@ -202,7 +202,7 @@ void Board::make_move(Move move)
 		positions_stack[current_position_idx].all_pieces ^= en_passant_mask;
 		positions_stack[current_position_idx].all_pieces_types[opp] ^= en_passant_mask;
 		positions_stack[current_position_idx].hash ^= zobrist_pieces_hashes[opp][Pawn][side_to_move == White ? to_square - 8 : to_square + 8];
-		positions_stack[current_position_idx].halfmove_clock = 0;
+		//no need to reset halfmove clock here because it will be reset later for all pawn moves
 	}
 	if (captured_piece==King)
 		positions_stack[current_position_idx].all_pieces ^= from_to_mask;
