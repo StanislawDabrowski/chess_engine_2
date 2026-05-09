@@ -433,6 +433,21 @@ void unmove_command_function(std::vector<std::string> args)
 	engine_mutex.unlock();
 }
 
+void eval_command_function(std::vector<std::string> args)
+{
+	HandleRunningThread handle_thread;
+	std::osyncstream out(std::cout);
+	out << std::emit_on_flush;
+	engine_mutex.lock();
+	int16_t eval;
+	if (engine.board.side_to_move == White)
+		eval = engine.se.evaluate<White>();
+	else
+		eval = engine.se.evaluate<Black>();
+	out << "Static evaluation: " << eval << std::endl;
+	engine_mutex.unlock();
+}
+
 
 std::vector<std::string> tokenize(const std::string& input)
 {
@@ -487,6 +502,7 @@ int main()
 		{"hash", hash_command_function},
 		{"move", move_command_function},
 		{"unmove", unmove_command_function},
+		{"eval", eval_command_function},
 	};
 	
 	std::unordered_map<std::thread::id, std::thread> threads;
