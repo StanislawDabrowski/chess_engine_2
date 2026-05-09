@@ -233,6 +233,8 @@ void Board::make_move(Move move)
 		positions_stack[current_position_idx].en_passant_square = (from_square+to_square)>>1;
 		positions_stack[current_position_idx].hash ^= zobrist_en_passant_hashes[positions_stack[current_position_idx].en_passant_square];
 	}
+	if (Utils::MoveType_to_PieceType[move_type] == Pawn)
+		positions_stack[current_position_idx].halfmove_clock = 0;
 	
 
 	side_to_move ^= 1;
