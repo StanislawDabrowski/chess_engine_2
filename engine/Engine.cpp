@@ -68,6 +68,10 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 	{
 		board.make_move(board.positions_stack[board.current_position_idx].legal_moves[i]);
 		int16_t score = -search<color==White ? Black : White, false, count_searched_nodes>(depth - 1, -beta, -alpha);
+		if (score > 0)
+			score -= 1;//to prefer faster wins
+		else if (score < 0)
+			score += 1;//to prefer slower losses
 		if (score > best_score)
 		{
 			best_score = score;
