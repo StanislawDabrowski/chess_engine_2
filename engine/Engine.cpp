@@ -3,7 +3,7 @@
 #include "Color.h"
 
 Engine::Engine()
-	:board(), mg(&board), se(&board)
+	:board(), mg(&board), se(&board, &mg)
 {
 	nodes_searched = 0;
 }
