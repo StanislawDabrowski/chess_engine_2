@@ -119,6 +119,17 @@ namespace hash_tests
 			prev_hash = board->positions_stack[board->current_position_idx].hash;
 			board->make_move(board->positions_stack[board->current_position_idx].legal_moves[i]);
 			hash_after_move = board->positions_stack[board->current_position_idx].hash;
+			board->calculate_hash();
+			if (hash_after_move != board->positions_stack[board->current_position_idx].hash)
+			{
+				board->unmake_move();//unmake to get the fen for the error message
+				std::cout << "Hash after making a move did not match the calculated hash. move: " << Utils::move_to_string(board->positions_stack[board->current_position_idx].legal_moves[i]) << " in position: " << Utils::get_fen(board) << std::endl;
+				if (terminate_on_failure)
+				{
+					exit(1);
+				}
+				board->make_move(board->positions_stack[board->current_position_idx].legal_moves[i]);//make the move again to continue the test
+			}
 			board->unmake_move();
 			if (hash_after_move == prev_hash)
 			{
