@@ -33,7 +33,7 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 	if constexpr (count_searched_nodes)
 		++nodes_searched;
 	//negmax with alpha-beta pruning
-	if (board.positions_stack[board.current_position_idx].draw_by_repetition)
+	if (board.positions_stack[board.current_position_idx].draw_by_repetition || board.positions_stack[board.current_position_idx].halfmove_clock >= 100)
 	{
 		if constexpr (root)
 			return std::pair<Move, int16_t>(0, 0);
