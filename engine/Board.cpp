@@ -157,6 +157,7 @@ void Board::make_move(Move move)
 	positions_stack[current_position_idx].en_passant_square = 0;
 	positions_stack[current_position_idx].hash ^= zobrist_en_passant_hashes[positions_stack[current_position_idx - 1].en_passant_square];
 	positions_stack[current_position_idx].all_pieces_types[side_to_move] ^= from_to_mask;
+	++positions_stack[current_position_idx].halfmove_clock;
 	
 	uint8_t piece_moved = Utils::MoveType_to_PieceType[move_type];
 	if (Utils::MoveType_is_not_promotion(move_type))
@@ -171,6 +172,7 @@ void Board::make_move(Move move)
 		positions_stack[current_position_idx].hash ^= zobrist_pieces_hashes[side_to_move][piece_moved][from_square];
 		positions_stack[current_position_idx].pieces[side_to_move][Utils::MoveType_to_promotion_piece[move_type]] ^= to_mask;
 		positions_stack[current_position_idx].hash ^= zobrist_pieces_hashes[side_to_move][Utils::MoveType_to_promotion_piece[move_type]][to_square];
+		positions_stack[current_position_idx].halfmove_clock = 0;
 	}
 
 	positions_stack[current_position_idx].hash ^= zobrist_castling_hashes[positions_stack[current_position_idx].castling_rights];
@@ -189,6 +191,7 @@ void Board::make_move(Move move)
 			positions_stack[current_position_idx].hash ^= zobrist_castling_hashes[positions_stack[current_position_idx].castling_rights];
 			positions_stack[current_position_idx].castling_rights &= castling_mask[to_square];
 			positions_stack[current_position_idx].hash ^= zobrist_castling_hashes[positions_stack[current_position_idx].castling_rights];
+			positions_stack[current_position_idx].halfmove_clock = 0;
 			break;
 		}
 	}
@@ -199,6 +202,7 @@ void Board::make_move(Move move)
 		positions_stack[current_position_idx].all_pieces ^= en_passant_mask;
 		positions_stack[current_position_idx].all_pieces_types[opp] ^= en_passant_mask;
 		positions_stack[current_position_idx].hash ^= zobrist_pieces_hashes[opp][Pawn][side_to_move == White ? to_square - 8 : to_square + 8];
+		positions_stack[current_position_idx].halfmove_clock = 0;
 	}
 	if (captured_piece==King)
 		positions_stack[current_position_idx].all_pieces ^= from_to_mask;
@@ -227,6 +231,7 @@ void Board::make_move(Move move)
 	if (move_type==PawnDoublePush)
 	{
 		positions_stack[current_position_idx].en_passant_square = (from_square+to_square)>>1;
+		positions_stack[current_position_idx].hash ^= zobrist_en_passant_hashes[positions_stack[current_position_idx].en_passant_square];
 	}
 	
 
@@ -278,7 +283,7 @@ void Board::initialize_hashes()
 	//en passant
 	for (size_t square = 0; square < 64; ++square)
 	{
-		if ((square >=8 && square < 16) || (square >= 48 && square < 56))//only for the 3rd and 6th rank
+		if ((square >=16 && square < 24) || (square >= 40 && square < 48))//only for the 3rd and 6th rank
 			zobrist_en_passant_hashes[square] = rng();
 		else
 			zobrist_en_passant_hashes[square] = 0;
@@ -303,10 +308,7 @@ void Board::calculate_hash()
 		}
 	}
 	positions_stack[current_position_idx].hash ^= zobrist_castling_hashes[positions_stack[current_position_idx].castling_rights];
-	if (positions_stack[current_position_idx].en_passant_square)
-	{
-		positions_stack[current_position_idx].hash ^= zobrist_en_passant_hashes[positions_stack[current_position_idx].en_passant_square];
-	}
+	positions_stack[current_position_idx].hash ^= zobrist_en_passant_hashes[positions_stack[current_position_idx].en_passant_square];
 	positions_stack[current_position_idx].hash ^= zobrist_side_to_move_hash*side_to_move;
 	
 }
