@@ -14,7 +14,7 @@ private:
 
 	constexpr static size_t max_pseudo_legal_moves_count = 512;
 	Move pseudo_legal_moves[max_pseudo_legal_moves_count];//save psudo legal moves limit
-	size_t pseudo_legal_moves_next_idx;
+	size_t pseudo_legal_moves_length;
 
 	void generate_relevant_blockers_and_square_blockers();	
 	void generate_square_bolckers();

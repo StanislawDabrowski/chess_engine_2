@@ -15,9 +15,9 @@ uint64_t Engine::perft(uint8_t depth)
 	mg.generate_pseudo_legal_moves<color>();
 	mg.filter_pseudo_legal_moves<color>();
 	
-	if (depth == 1) return board.positions_stack[board.current_position_idx].legal_move_next_idx;
+	if (depth == 1) return board.positions_stack[board.current_position_idx].legal_moves_length;
 	uint64_t count = 0;
-	for (int i = 0;i<board.positions_stack[board.current_position_idx].legal_move_next_idx;++i)
+	for (int i = 0;i<board.positions_stack[board.current_position_idx].legal_moves_length;++i)
 	{
 		board.make_move(board.positions_stack[board.current_position_idx].legal_moves[i]);
 		count+=perft<color==White ? Black : White>(depth-1);
@@ -42,7 +42,7 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 	}
 	mg.generate_pseudo_legal_moves<color>();
 	mg.filter_pseudo_legal_moves<color>();
-	if (board.positions_stack[board.current_position_idx].legal_move_next_idx == 0)
+	if (board.positions_stack[board.current_position_idx].legal_moves_length == 0)
 	{
 		//checkmate or stalemate
 		int16_t eval;
@@ -64,7 +64,7 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 	}
 	int16_t best_score = MIN_EVAL - 1;//MIN_EVAL is -2^15+1, so MIN_EVAL-1 does not wrap around. Is set to MIN_EVAL-1 for best_moves to be always initialized
 	Move best_move;	
-	for (int i = 0;i<board.positions_stack[board.current_position_idx].legal_move_next_idx;++i)
+	for (int i = 0;i<board.positions_stack[board.current_position_idx].legal_moves_length;++i)
 	{
 		board.make_move(board.positions_stack[board.current_position_idx].legal_moves[i]);
 		int16_t score = -search<color==White ? Black : White, false, count_searched_nodes>(depth - 1, -beta, -alpha);

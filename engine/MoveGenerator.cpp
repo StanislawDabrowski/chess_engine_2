@@ -455,7 +455,7 @@ bool inline MoveGenerator::can_castle()
 template<Color color>
 void MoveGenerator::generate_pseudo_legal_moves()
 {
-	pseudo_legal_moves_next_idx = 0;
+	pseudo_legal_moves_length = 0;
 	Color opp = (color == White) ? Black : White;
 	
 	Bitboard piece_copy;
@@ -485,43 +485,43 @@ void MoveGenerator::generate_pseudo_legal_moves()
 	while (single_push)
 	{
 		to = std::countr_zero(single_push);
-		pseudo_legal_moves[pseudo_legal_moves_next_idx++] = ((color == White) ? (to - 8) : (to + 8)) | (to << 6) | (PawnSinglePush << 12);
+		pseudo_legal_moves[pseudo_legal_moves_length++] = ((color == White) ? (to - 8) : (to + 8)) | (to << 6) | (PawnSinglePush << 12);
 		single_push &= single_push - 1;
 	}
 	while (double_push)
 	{
 		to = std::countr_zero(double_push);
-		pseudo_legal_moves[pseudo_legal_moves_next_idx++] = ((color == White) ? (to - 16) : (to + 16)) | (to << 6) | (PawnDoublePush << 12);
+		pseudo_legal_moves[pseudo_legal_moves_length++] = ((color == White) ? (to - 16) : (to + 16)) | (to << 6) | (PawnDoublePush << 12);
 		double_push &= double_push - 1;
 	}
 	while (left_captures)
 	{
 		to = std::countr_zero(left_captures);
-		pseudo_legal_moves[pseudo_legal_moves_next_idx++] =  ((color == White) ? (to - 7) : (to + 9)) | (to << 6) | (PawnCapture << 12);
+		pseudo_legal_moves[pseudo_legal_moves_length++] =  ((color == White) ? (to - 7) : (to + 9)) | (to << 6) | (PawnCapture << 12);
 		left_captures &= left_captures - 1;
 	}
 	while (right_captures)
 	{
 		to = std::countr_zero(right_captures);
-		pseudo_legal_moves[pseudo_legal_moves_next_idx++] =  ((color == White) ? (to - 9) : (to + 7)) | (to << 6) | (PawnCapture << 12);
+		pseudo_legal_moves[pseudo_legal_moves_length++] =  ((color == White) ? (to - 9) : (to + 7)) | (to << 6) | (PawnCapture << 12);
 		right_captures &= right_captures - 1;
 	}
 	while (left_capture_promotion)
 	{
 		to = std::countr_zero(left_capture_promotion);
-		pseudo_legal_moves[pseudo_legal_moves_next_idx++] =  ((color == White) ? (to - 7) : (to + 9)) | (to << 6) | (PromotionToQueen << 12);
+		pseudo_legal_moves[pseudo_legal_moves_length++] =  ((color == White) ? (to - 7) : (to + 9)) | (to << 6) | (PromotionToQueen << 12);
 		left_capture_promotion &= left_capture_promotion - 1;
 	}
 	while (right_capture_promotion)
 	{
 		to = std::countr_zero(right_capture_promotion);
-		pseudo_legal_moves[pseudo_legal_moves_next_idx++] =  ((color == White) ? (to - 9) : (to + 7)) | (to << 6) | (PromotionToQueen << 12);
+		pseudo_legal_moves[pseudo_legal_moves_length++] =  ((color == White) ? (to - 9) : (to + 7)) | (to << 6) | (PromotionToQueen << 12);
 		right_capture_promotion &= right_capture_promotion - 1;
 	}
 	while (push_promotion)
 	{
 		to = std::countr_zero(push_promotion);
-		pseudo_legal_moves[pseudo_legal_moves_next_idx++] =  ((color == White) ? (to - 8) : (to + 8)) | (to << 6) | (PromotionToQueen << 12);
+		pseudo_legal_moves[pseudo_legal_moves_length++] =  ((color == White) ? (to - 8) : (to + 8)) | (to << 6) | (PromotionToQueen << 12);
 		push_promotion &= push_promotion - 1;
 	}
 	//en passant
@@ -532,11 +532,11 @@ void MoveGenerator::generate_pseudo_legal_moves()
 		Bitboard pawns_right = (color == White) ? (piece_copy & Utils::FILE_A_NEGATION) << 7 : (piece_copy & Utils::FILE_A_NEGATION) >> 9;
 		if (pawns_left & en_passant_mask)
 		{
-			pseudo_legal_moves[pseudo_legal_moves_next_idx++] = (board->positions_stack[board->current_position_idx].en_passant_square + (color == White ? -9 : 7)) | (board->positions_stack[board->current_position_idx].en_passant_square << 6) | (EnPassant << 12);
+			pseudo_legal_moves[pseudo_legal_moves_length++] = (board->positions_stack[board->current_position_idx].en_passant_square + (color == White ? -9 : 7)) | (board->positions_stack[board->current_position_idx].en_passant_square << 6) | (EnPassant << 12);
 		}
 		if (pawns_right & en_passant_mask)
 		{
-			pseudo_legal_moves[pseudo_legal_moves_next_idx++] = (board->positions_stack[board->current_position_idx].en_passant_square + (color == White ? -7 : 9)) | (board->positions_stack[board->current_position_idx].en_passant_square << 6) | (EnPassant << 12);
+			pseudo_legal_moves[pseudo_legal_moves_length++] = (board->positions_stack[board->current_position_idx].en_passant_square + (color == White ? -7 : 9)) | (board->positions_stack[board->current_position_idx].en_passant_square << 6) | (EnPassant << 12);
 		}
 	}
 	
@@ -549,7 +549,7 @@ void MoveGenerator::generate_pseudo_legal_moves()
 		while (attacks)
 		{
 			to = std::countr_zero(attacks);
-			pseudo_legal_moves[pseudo_legal_moves_next_idx++] = from | (to << 6) | (KnightMove << 12);
+			pseudo_legal_moves[pseudo_legal_moves_length++] = from | (to << 6) | (KnightMove << 12);
 			attacks &= attacks - 1;
 		}
 		piece_copy &= piece_copy - 1;
@@ -566,7 +566,7 @@ void MoveGenerator::generate_pseudo_legal_moves()
 		while (attacks)
 		{
 			to = std::countr_zero(attacks);
-			pseudo_legal_moves[pseudo_legal_moves_next_idx++] = from | (to << 6) | (BishopMove << 12);
+			pseudo_legal_moves[pseudo_legal_moves_length++] = from | (to << 6) | (BishopMove << 12);
 			attacks &= attacks - 1;
 		}
 		piece_copy &= piece_copy - 1;
@@ -582,7 +582,7 @@ void MoveGenerator::generate_pseudo_legal_moves()
 		while (attacks)
 		{
 			to = std::countr_zero(attacks);
-			pseudo_legal_moves[pseudo_legal_moves_next_idx++] = from | (to << 6) | (RookMove << 12);
+			pseudo_legal_moves[pseudo_legal_moves_length++] = from | (to << 6) | (RookMove << 12);
 			attacks &= attacks - 1;
 		}
 		piece_copy &= piece_copy - 1;
@@ -600,7 +600,7 @@ void MoveGenerator::generate_pseudo_legal_moves()
 		while (attacks)
 		{
 			to = std::countr_zero(attacks);
-			pseudo_legal_moves[pseudo_legal_moves_next_idx++] = from | (to << 6) | (QueenMove << 12);
+			pseudo_legal_moves[pseudo_legal_moves_length++] = from | (to << 6) | (QueenMove << 12);
 			attacks &= attacks - 1;
 		}
 		piece_copy &= piece_copy - 1;
@@ -612,7 +612,7 @@ void MoveGenerator::generate_pseudo_legal_moves()
 	while (attacks)
 	{
 		to = std::countr_zero(attacks);
-		pseudo_legal_moves[pseudo_legal_moves_next_idx++] = from | (to << 6) | (KingMove << 12);
+		pseudo_legal_moves[pseudo_legal_moves_length++] = from | (to << 6) | (KingMove << 12);
 		attacks &= attacks - 1;
 	}
 	
@@ -621,12 +621,12 @@ void MoveGenerator::generate_pseudo_legal_moves()
 		if (board->positions_stack[board->current_position_idx].castling_rights & 0b0001)//white king side
 		{
 			if ((board->positions_stack[board->current_position_idx].all_pieces & Utils::WHITE_KINGSIDE_CASTLE_MASK) == 0 && can_castle<0>())
-				pseudo_legal_moves[pseudo_legal_moves_next_idx++] = Utils::WHITE_KINGSIDE_CASTLE_FROM_TO_MASK | (Castle << 12);
+				pseudo_legal_moves[pseudo_legal_moves_length++] = Utils::WHITE_KINGSIDE_CASTLE_FROM_TO_MASK | (Castle << 12);
 		}
 		if (board->positions_stack[board->current_position_idx].castling_rights & 0b0010)//white queen side
 		{
 			if ((board->positions_stack[board->current_position_idx].all_pieces & Utils::WHITE_QUEENSIDE_CASTLE_MASK) == 0 && can_castle<1>())
-				pseudo_legal_moves[pseudo_legal_moves_next_idx++] = Utils::WHITE_QUEENSIDE_CASTLE_FROM_TO_MASK | (Castle << 12);
+				pseudo_legal_moves[pseudo_legal_moves_length++] = Utils::WHITE_QUEENSIDE_CASTLE_FROM_TO_MASK | (Castle << 12);
 		}
 	}
 	else
@@ -634,26 +634,26 @@ void MoveGenerator::generate_pseudo_legal_moves()
 		if (board->positions_stack[board->current_position_idx].castling_rights & 0b0100)//black king side
 		{
 			if ((board->positions_stack[board->current_position_idx].all_pieces & Utils::BLACK_KINGSIDE_CASTLE_MASK) == 0 && can_castle<2>())
-				pseudo_legal_moves[pseudo_legal_moves_next_idx++] = Utils::BLACK_KINGSIDE_CASTLE_FROM_TO_MASK | (Castle << 12);
+				pseudo_legal_moves[pseudo_legal_moves_length++] = Utils::BLACK_KINGSIDE_CASTLE_FROM_TO_MASK | (Castle << 12);
 		}
 		if (board->positions_stack[board->current_position_idx].castling_rights & 0b1000)//white queen side
 		{
 			if ((board->positions_stack[board->current_position_idx].all_pieces & Utils::BLACK_QUEENSIDE_CASTLE_MASK) == 0 && can_castle<3>())
-				pseudo_legal_moves[pseudo_legal_moves_next_idx++] = Utils::BLACK_QUEENSIDE_CASTLE_FROM_TO_MASK | (Castle << 12);
+				pseudo_legal_moves[pseudo_legal_moves_length++] = Utils::BLACK_QUEENSIDE_CASTLE_FROM_TO_MASK | (Castle << 12);
 		}
 	}
 }
 
 void MoveGenerator::add_legal_move(const Move move)
 {
-	board->positions_stack[board->current_position_idx].legal_moves[board->positions_stack[board->current_position_idx].legal_move_next_idx++] = move;
+	board->positions_stack[board->current_position_idx].legal_moves[board->positions_stack[board->current_position_idx].legal_moves_length++] = move;
 	if (move >> 12 == PromotionToQueen)
 	{
 		//add underpromotions
 		//underpromotion enums are right after promotions to queen so just adding 1, 2 or 3 to queen promotions in enough
-		board->positions_stack[board->current_position_idx].legal_moves[board->positions_stack[board->current_position_idx].legal_move_next_idx++] = move + (1 << 12);
-		board->positions_stack[board->current_position_idx].legal_moves[board->positions_stack[board->current_position_idx].legal_move_next_idx++] = move + (2 << 12);
-		board->positions_stack[board->current_position_idx].legal_moves[board->positions_stack[board->current_position_idx].legal_move_next_idx++] = move + (3 << 12);
+		board->positions_stack[board->current_position_idx].legal_moves[board->positions_stack[board->current_position_idx].legal_moves_length++] = move + (1 << 12);
+		board->positions_stack[board->current_position_idx].legal_moves[board->positions_stack[board->current_position_idx].legal_moves_length++] = move + (2 << 12);
+		board->positions_stack[board->current_position_idx].legal_moves[board->positions_stack[board->current_position_idx].legal_moves_length++] = move + (3 << 12);
 	}
 }
 
@@ -663,7 +663,7 @@ void MoveGenerator::filter_pseudo_legal_moves()
 	BoardState* current_board_state = &board->positions_stack[board->current_position_idx];
 
 
-	current_board_state->legal_move_next_idx = 0;
+	current_board_state->legal_moves_length = 0;
 
 	size_t opp = color ^ 1;
 	size_t king_square = std::countr_zero(current_board_state->pieces[color][King]);
@@ -778,7 +778,7 @@ void MoveGenerator::filter_pseudo_legal_moves()
 
 	if (number_of_checks==0)
 	{
-		for(int i = 0;i<pseudo_legal_moves_next_idx;++i)
+		for(int i = 0;i<pseudo_legal_moves_length;++i)
 		{
 			if (i==22)
 				std::cout<<"";
@@ -808,7 +808,7 @@ void MoveGenerator::filter_pseudo_legal_moves()
 		if ((checks & (1 << Knight)) || (checks & (1 << Pawn)))//non sliding piece check, only king moves and captures are legal
 		{
 			Bitboard checking_piece_index = std::countr_zero(checking_pawn | checking_knight);//at least one bit of (checking_pawn | checking_knight) is 1 (not 0)
-			for (int i = 0;i<pseudo_legal_moves_next_idx;++i)
+			for (int i = 0;i<pseudo_legal_moves_length;++i)
 			{
 				switch (pseudo_legal_moves[i] >> 12)
 				{
@@ -844,7 +844,7 @@ void MoveGenerator::filter_pseudo_legal_moves()
 				legal_moveTo_squares = rook_square_blockers[king_square][std::countr_zero(checking_queens)] | checking_queens;
 			
 
-			for (int i = 0;i<pseudo_legal_moves_next_idx;++i)
+			for (int i = 0;i<pseudo_legal_moves_length;++i)
 			{
 				if ((pseudo_legal_moves[i] >> 12) != KingMove)
 				{
@@ -865,7 +865,7 @@ void MoveGenerator::filter_pseudo_legal_moves()
 	}
 	else//double check
 	{
-		for (int i = 0;i<pseudo_legal_moves_next_idx;++i)
+		for (int i = 0;i<pseudo_legal_moves_length;++i)
 		{ if ((pseudo_legal_moves[i] >> 12) == KingMove) { handle_king_move_legality_check(i);
 			}
 		}

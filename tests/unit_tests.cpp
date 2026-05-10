@@ -114,7 +114,7 @@ namespace hash_tests
 			mg->filter_pseudo_legal_moves<Black>();
 		}
 		uint64_t prev_hash, hash_after_move;
-		for (size_t i = 0; i < board->positions_stack[board->current_position_idx].legal_move_next_idx; ++i)
+		for (size_t i = 0; i < board->positions_stack[board->current_position_idx].legal_moves_length; ++i)
 		{
 			prev_hash = board->positions_stack[board->current_position_idx].hash;
 			board->make_move(board->positions_stack[board->current_position_idx].legal_moves[i]);

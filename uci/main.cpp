@@ -142,7 +142,7 @@ void go_command_function(std::vector<std::string> args)
 		}
 		uint64_t count = 0;
 		uint64_t perft_result;
-		for (int i = 0;i<engine.board.positions_stack[engine.board.current_position_idx].legal_move_next_idx;++i)
+		for (int i = 0;i<engine.board.positions_stack[engine.board.current_position_idx].legal_moves_length;++i)
 		{
 			Move move = engine.board.positions_stack[engine.board.current_position_idx].legal_moves[i];
 			engine.board.make_move(move);
