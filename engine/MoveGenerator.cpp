@@ -927,6 +927,39 @@ void MoveGenerator::generate_noisy_pseudo_legal_moves()
 	size_t from;
 	size_t to;
 	size_t attacks;
+	Bitboard relevant_blockers;
+
+	
+	piece_copy = current_board_state->pieces[color][King];
+	from = std::countr_zero(piece_copy);
+	if (pawn_attack_tables[color][from] & current_board_state->pieces[opp][Pawn])
+	{
+		generate_pseudo_legal_moves<color>();
+		return;
+	}
+	if (knight_attack_tables[from] & current_board_state->pieces[opp][Knight])
+	{
+		generate_pseudo_legal_moves<color>();
+		return;
+	}
+	relevant_blockers = current_board_state->all_pieces & bishop_relevant_blockers[from];
+	index = (relevant_blockers * bishop_magic_numbers[from]) >> (64 - std::popcount(bishop_relevant_blockers[from]));
+	attacks = bishop_attack_tables[from][index];
+	if (attacks & (current_board_state->pieces[opp][Bishop] | current_board_state->pieces[opp][Queen]))
+	{
+		generate_pseudo_legal_moves<color>();
+		return;
+	}
+	relevant_blockers = current_board_state->all_pieces & rook_relevant_blockers[from];
+	index = (relevant_blockers * rook_magic_numbers[from]) >> (64 - std::popcount(rook_relevant_blockers[from]));
+	attacks = rook_attack_tables[from][index];
+	if (attacks & (current_board_state->pieces[opp][Rook] | current_board_state->pieces[opp][Queen]))
+	{
+		generate_pseudo_legal_moves<color>();
+		return;
+	}
+
+
 
 	//find all squares from which opp king can be checked by each piece type
 	Bitboard squares_from_which_king_can_be_checked[5];//each index for each piece. only 5 because king can't give a check. PieceType::King has value 5 (is last) so it's not a problem
@@ -934,34 +967,14 @@ void MoveGenerator::generate_noisy_pseudo_legal_moves()
 	piece_copy = current_board_state->pieces[opp][King];
 	//pawns
 	squares_from_which_king_can_be_checked[Pawn] = pawn_attack_tables[color][std::countr_zero(piece_copy)];
-	if (squares_from_which_king_can_be_checked[Pawn] & current_board_state->pieces[opp][Pawn])
-	{
-		generate_pseudo_legal_moves<color>();
-		return;
-	}
 	//knights
 	squares_from_which_king_can_be_checked[Knight] = knight_attack_tables[std::countr_zero(piece_copy)];
-	if (squares_from_which_king_can_be_checked[Knight] & current_board_state->pieces[opp][Knight])
-	{
-		generate_pseudo_legal_moves<color>();
-		return;
-	}
 	//bishops
 	index = ((current_board_state->all_pieces & bishop_relevant_blockers[std::countr_zero(piece_copy)]) * bishop_magic_numbers[std::countr_zero(piece_copy)]) >> (64 - std::popcount(bishop_relevant_blockers[std::countr_zero(piece_copy)]));
 	squares_from_which_king_can_be_checked[Bishop] = bishop_attack_tables[std::countr_zero(piece_copy)][index];
-	if (squares_from_which_king_can_be_checked[Bishop] & (current_board_state->pieces[opp][Bishop] | current_board_state->pieces[opp][Queen]))
-	{
-		generate_pseudo_legal_moves<color>();
-		return;
-	}
 	//rooks
 	index = ((current_board_state->all_pieces & rook_relevant_blockers[std::countr_zero(piece_copy)]) * rook_magic_numbers[std::countr_zero(piece_copy)]) >> (64 - std::popcount(rook_relevant_blockers[std::countr_zero(piece_copy)]));
 	squares_from_which_king_can_be_checked[Rook] = rook_attack_tables[std::countr_zero(piece_copy)][index];
-	if (squares_from_which_king_can_be_checked[Rook] & (current_board_state->pieces[opp][Rook] | current_board_state->pieces[opp][Queen]))
-	{
-		generate_pseudo_legal_moves<color>();
-		return;
-	}
 	//queens
 	squares_from_which_king_can_be_checked[Queen] = squares_from_which_king_can_be_checked[Bishop] | squares_from_which_king_can_be_checked[Rook];
 	
@@ -1070,7 +1083,7 @@ void MoveGenerator::generate_noisy_pseudo_legal_moves()
 	while (piece_copy)
 	{
 		from = std::countr_zero(piece_copy);
-		size_t relevant_blockers = current_board_state->all_pieces & bishop_relevant_blockers[from];
+		relevant_blockers = current_board_state->all_pieces & bishop_relevant_blockers[from];
 		index = (relevant_blockers * bishop_magic_numbers[from]) >> (64 - std::popcount(bishop_relevant_blockers[from]));
 		attacks = bishop_attack_tables[from][index] & ~current_board_state->all_pieces_types[color] & (current_board_state->pieces[opp][Rook] | current_board_state->pieces[opp][Queen] | squares_from_which_king_can_be_checked[Bishop]);
 		while (attacks)
@@ -1086,7 +1099,7 @@ void MoveGenerator::generate_noisy_pseudo_legal_moves()
 	while (piece_copy)
 	{
 		from = std::countr_zero(piece_copy);
-		size_t relevant_blockers = current_board_state->all_pieces & rook_relevant_blockers[from];
+		relevant_blockers = current_board_state->all_pieces & rook_relevant_blockers[from];
 		index = (relevant_blockers * rook_magic_numbers[from]) >> (64 - std::popcount(rook_relevant_blockers[from]));
 		attacks = rook_attack_tables[from][index] & ~current_board_state->all_pieces_types[color] & (current_board_state->pieces[opp][Queen] | squares_from_which_king_can_be_checked[Rook]);
 		while (attacks)
@@ -1102,9 +1115,9 @@ void MoveGenerator::generate_noisy_pseudo_legal_moves()
 	while (piece_copy)
 	{
 		from = std::countr_zero(piece_copy);
-		size_t relevant_blockers_1 = current_board_state->all_pieces & bishop_relevant_blockers[from];
+		relevant_blockers = current_board_state->all_pieces & bishop_relevant_blockers[from];
 		size_t relevant_blockers_2 = current_board_state->all_pieces & rook_relevant_blockers[from];
-		index = (relevant_blockers_1 * bishop_magic_numbers[from]) >> (64 - std::popcount(bishop_relevant_blockers[from]));
+		index = (relevant_blockers * bishop_magic_numbers[from]) >> (64 - std::popcount(bishop_relevant_blockers[from]));
 		size_t bishop_attacks = bishop_attack_tables[from][index];
 		index = (relevant_blockers_2 * rook_magic_numbers[from]) >> (64 - std::popcount(rook_relevant_blockers[from]));
 		size_t rook_attacks = rook_attack_tables[from][index];
