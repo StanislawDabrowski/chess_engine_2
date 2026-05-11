@@ -251,17 +251,19 @@ void go_command_function(std::vector<std::string> args)
 			auto start_time = std::chrono::high_resolution_clock::now();
 			for (uint8_t depth = 1;depth<=depth_max && std::abs((engine.board.side_to_move == White ? Engine::MAX_EVAL : Engine::MIN_EVAL)-search_result.second)>=depth;++depth)
 			{
-				engine_for_go_command.nodes_searched = 0;
+				engine_for_go_command.normal_search_nodes_searched = 0;
+				engine_for_go_command.quiescence_search_nodes_searched = 0;
 				if (engine_for_go_command.board.side_to_move == White)
-					search_result_temp = engine_for_go_command.search<White, true, true>(depth);
+					search_result = engine_for_go_command.search<White, true, false, true>(depth);
 				else
-					search_result_temp = engine_for_go_command.search<Black, true, true>(depth);
+					search_result = engine_for_go_command.search<Black, true, false, true>(depth);
 				if (engine_for_go_command.stop_search.load(std::memory_order_relaxed))
 					break;
 				else
 					search_result = search_result_temp;
+
 				time_passed = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
-				out << "info depth " << static_cast<int>(depth) << " score cp " << search_result.second << " nodes " << engine_for_go_command.nodes_searched << " nps " << (time_passed > 0 ? engine_for_go_command.nodes_searched * 1'000'000 / time_passed : 0) << " time " << static_cast<int>(std::round((static_cast<float>(time_passed)/1000.0))) << std::endl;
+				out << "info depth " << static_cast<int>(depth) << " score cp " << search_result.second << " nodes " << engine_for_go_command.normal_search_nodes_searched+engine_for_go_command.quiescence_search_nodes_searched << " nps " << (time_passed > 0 ? (engine_for_go_command.normal_search_nodes_searched+engine_for_go_command.quiescence_search_nodes_searched) * 1'000'000 / time_passed : 0) << " time " << static_cast<int>(std::round((static_cast<float>(time_passed)/1000.0))) << std::endl;
 			}
 		}
 		else
@@ -276,11 +278,12 @@ void go_command_function(std::vector<std::string> args)
 			long previous_time_passed = -1;
 			for (uint8_t depth = 1;true && std::abs((engine.board.side_to_move == White ? Engine::MAX_EVAL : Engine::MIN_EVAL)-search_result.second)>=depth;++depth)
 			{
-				engine_for_go_command.nodes_searched = 0;
+				engine_for_go_command.normal_search_nodes_searched = 0;
+				engine_for_go_command.quiescence_search_nodes_searched = 0;
 				if (engine_for_go_command.board.side_to_move == White)
-					search_result_temp = engine_for_go_command.search<White, true, true>(depth);
+					search_result = engine_for_go_command.search<White, true, false, true>(depth);
 				else
-					search_result_temp = engine_for_go_command.search<Black, true, true>(depth);
+					search_result = engine_for_go_command.search<Black, true, false, true>(depth);
 				if (engine_for_go_command.stop_search.load(std::memory_order_relaxed))
 					break;
 				else
@@ -291,7 +294,7 @@ void go_command_function(std::vector<std::string> args)
 				{
 					effective_branching_factor_estimate = time_passed/static_cast<float>(previous_time_passed);
 				}
-				out << "info depth " << static_cast<int>(depth) << " score cp " << search_result.second << " nodes " << engine_for_go_command.nodes_searched << " nps " << (time_passed > 0 ? engine_for_go_command.nodes_searched * 1'000'000 / time_passed : 0) << " time " << static_cast<int>(std::round((static_cast<float>(time_passed)/1000.0))) << std::endl;
+				out << "info depth " << static_cast<int>(depth) << " score cp " << search_result.second << " nodes " << engine_for_go_command.normal_search_nodes_searched+engine_for_go_command.quiescence_search_nodes_searched << " nps " << (time_passed > 0 ? (engine_for_go_command.normal_search_nodes_searched+engine_for_go_command.quiescence_search_nodes_searched) * 1'000'000 / time_passed : 0) << " time " << static_cast<int>(std::round((static_cast<float>(time_passed)/1000.0))) << std::endl;
 				long estimated_time_for_next_depth = time_passed * effective_branching_factor_estimate;
 				if (estimated_time_for_next_depth * 1.2 > time_to_think * 1000)//*1000 is neccessary we measure time in microseconds but time_to_think is in milliseconds
 					break;
