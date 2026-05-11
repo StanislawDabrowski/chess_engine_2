@@ -81,6 +81,8 @@ public:
 	template<Color color>
 	void filter_pseudo_legal_moves();
 	template<Color color>
+	void generate_noisy_pseudo_legal_moves();//for qsearch
+	template<Color color>
 	bool in_check() const;
 };
 
