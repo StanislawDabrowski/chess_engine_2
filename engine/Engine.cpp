@@ -9,6 +9,19 @@ Engine::Engine()
 	nodes_searched = 0;
 }
 
+Engine::Engine(const Engine& other)
+	:board(other.board), mg(&board), se(&board), nodes_searched(other.nodes_searched)
+{ }
+
+Engine& Engine::operator=(const Engine& other)
+{
+	board = other.board;
+	mg = MoveGenerator(&board);
+	se = StaticEval(&board);
+	nodes_searched = other.nodes_searched;
+	return *this;
+}
+
 template<Color color>
 uint64_t Engine::perft(uint8_t depth)
 {

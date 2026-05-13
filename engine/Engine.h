@@ -17,6 +17,8 @@ public:
 	static constexpr int16_t MIN_EVAL = -32767;//needs to be -32767 so -MIN_EVAL is MAX_EVAL, not itself, which due to integer overflow would probably (it's UB), be the case
 
 	Engine();
+	Engine(const Engine&);
+	Engine& operator=(const Engine&);
 	template<Color color>
 	uint64_t perft(uint8_t depth);
 	template<Color color, bool root = false, bool count_searched_nodes = false>//if root, return a pair of the best move and evaluation, otherwise return only the evaluation. Made that way to overheadlessly have only 1 definition of the search function for both root and non-root calls.

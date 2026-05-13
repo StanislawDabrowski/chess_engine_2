@@ -1,128 +1,85 @@
-#include "Engine.h"
-#include "Utils.h"
-#include "TimeManagement.h"
-#include <ostream>
-#include <unordered_map>
-#include <unordered_set>
+#include <iostream>
 #include <functional>
 #include <thread>
 #include <atomic>
 #include <syncstream>
 #include <chrono>
 #include <cmath>
-
+#include "Engine.h"
+#include "TimeManagement.h"
+#include "Utils.h"
 
 
 Engine engine = Engine();
-Board board_copy;
-std::mutex engine_mutex;
-std::mutex board_copy_mutex;
+Engine engine_for_go_command = Engine(engine);
 
-std::atomic<bool> debug_mode = false;
+std::atomic<bool> go_command_is_running = false;
 
-
-std::unordered_set<std::thread::id> running_threads;
-std::mutex running_threads_mutex;
-std::mutex running_thread_being_added_mutex;//locked before starting a thread and unclocked after adding an id. The thread locks before constructing the HandleRunningThread.
-std::atomic<uint32_t> number_of_isready_commands_running = 0;//in case 1 isready command is running and another is called, to preven commands blocking eachother, the one started later exits, first incrementing that varibale and when the function prints "readyok\n" it prints as many readyoks as many commands have be run and not yet finished
+bool debug_mode = false;
 
 
-class HandleRunningThread
+class HandleGoCommandExit
 {
-	public:
-	HandleRunningThread()
+public:
+	~HandleGoCommandExit()
 	{
-		running_thread_being_added_mutex.lock();
-		running_thread_being_added_mutex.unlock();
-	}
-	~HandleRunningThread()
-	{
-		running_threads_mutex.lock();
-		running_threads.erase(std::this_thread::get_id());
-		running_threads_mutex.unlock();
+		go_command_is_running.store(false, std::memory_order_release);
 	}
 };
+
 
 void do_nothing_command_function(std::vector<std::string> args)
 {
 	//does nothing, for command which for now don't need any implementation, like e.g. ucinewgame
-	HandleRunningThread handle_thread;
 }
 
 void d_command_function(std::vector<std::string> args)
 {
-	HandleRunningThread handle_thread;
-	std::osyncstream out(std::cout);//necessary to pass the out as an lvalue not rvalue
-	Utils::display_board(&board_copy, out);
-	board_copy_mutex.unlock();
+	Utils::display_board(&engine.board);
 }
 
 void isready_command_function(std::vector<std::string> args)
 {
-	HandleRunningThread handle_thread;
-	if (number_of_isready_commands_running.fetch_add(1) != 0)
-	{
-		return;
-	}
-	while (true)
-	{
-		running_threads_mutex.lock();
-		if (running_threads.size() == 1)//only the current thread is running
-		{
-			running_threads_mutex.unlock();
-			break;
-		}
-		running_threads_mutex.unlock();
-		std::this_thread::sleep_for(std::chrono::milliseconds(3));//arbitrary small sleep to avoid busy waiting without making the engine unresponsive for too long
-	}
-	std::osyncstream out(std::cout);
-	uint32_t n = number_of_isready_commands_running.exchange(0);
-	for (uint32_t i = 0;i<n;++i)
-	{
-		out << "readyok" << std::endl;
-	}
+	std::cout << "readyok" << std::endl;
 }
 
 void uci_command_function(std::vector<std::string> args)
 {
-	HandleRunningThread handle_thread;
-	std::osyncstream out(std::cout);
-	out << "id name ChessEngine2" << std::endl;
-	out << "id author Avalfortz" << std::endl;
-	out << "uciok" << std::endl;
+	std::cout << "id name ChessEngine2" << std::endl;
+	std::cout << "id author Avalfortz" << std::endl;
+	std::cout << "uciok" << std::endl;
 }
 
 void debug_command_function(std::vector<std::string> args)
 {
-	HandleRunningThread handle_thread;
-	std::osyncstream out(std::cout);
 	bool value_provided = false;
 	for (int i = 0;i<args.size();++i)
 	{
 		if (args[i]=="on")
 		{
-			debug_mode.store(true, std::memory_order_relaxed);
+			debug_mode = true;
 			value_provided = true;
 			break;
 		}
 		else if (args[i]=="off")
-		{ debug_mode.store(false, std::memory_order_relaxed);
+		{
+			debug_mode = false;
 			value_provided = true;
 			break;
 		}
 	}
 	if (!value_provided)
 	{
-		out << "No value provided for debug command. Use 'debug on' or 'debug off'." << std::endl;
+		std::cout << "No value provided for debug command. Use 'debug on' or 'debug off'." << std::endl;
 		return;
 	}
-	out << "Debug mode " << (debug_mode.load(std::memory_order_relaxed) ? "enabled" : "disabled") << std::endl;
+	std::cout << "Debug mode " << (debug_mode ? "enabled" : "disabled") << std::endl;
 }
 
 
 void go_command_function(std::vector<std::string> args)
 {
-	HandleRunningThread handle_thread;
+	HandleGoCommandExit handle_go_command_exit;
 	std::osyncstream out(std::cout);
 	out << std::emit_on_flush;
 	if (args.size() >= 2 && args[0]=="perft")
@@ -137,37 +94,36 @@ void go_command_function(std::vector<std::string> args)
 			return;
 		}
 		
-		if (engine.board.side_to_move == White)
+		if (engine_for_go_command.board.side_to_move == White)
 		{
-			engine.mg.generate_pseudo_legal_moves<White>();
-			engine.mg.filter_pseudo_legal_moves<White>();
+			engine_for_go_command.mg.generate_pseudo_legal_moves<White>();
+			engine_for_go_command.mg.filter_pseudo_legal_moves<White>();
 		}
 		else
 		{
-			engine.mg.generate_pseudo_legal_moves<Black>();
-			engine.mg.filter_pseudo_legal_moves<Black>();
+			engine_for_go_command.mg.generate_pseudo_legal_moves<Black>();
+			engine_for_go_command.mg.filter_pseudo_legal_moves<Black>();
 
 		}
 		uint64_t count = 0;
 		uint64_t perft_result;
-		for (int i = 0;i<engine.board.positions_stack[engine.board.current_position_idx].legal_moves_length;++i)
+		for (int i = 0;i<engine_for_go_command.board.positions_stack[engine.board.current_position_idx].legal_moves_length;++i)
 		{
-			Move move = engine.board.positions_stack[engine.board.current_position_idx].legal_moves[i];
-			engine.board.make_move(move);
+			Move move = engine_for_go_command.board.positions_stack[engine.board.current_position_idx].legal_moves[i];
+			engine_for_go_command.board.make_move(move);
 			if (depth>1)
 			{
-				if (engine.board.side_to_move == White)
-					perft_result = engine.perft<White>(depth - 1);
+				if (engine_for_go_command.board.side_to_move == White)
+					perft_result = engine_for_go_command.perft<White>(depth - 1);
 				else
-					perft_result = engine.perft<Black>(depth - 1);
+					perft_result = engine_for_go_command.perft<Black>(depth - 1);
 			}
 			else
 				perft_result = 1;
 			count += perft_result;
 			out << Utils::move_to_string(move) << ": " << perft_result << std::endl;
-			engine.board.unmake_move();
+			engine_for_go_command.board.unmake_move();
 		}
-		engine_mutex.unlock();
 		out << count << std::endl;
 	}
 	else
@@ -293,13 +249,13 @@ void go_command_function(std::vector<std::string> args)
 			auto start_time = std::chrono::high_resolution_clock::now();
 			for (uint8_t depth = 1;depth<=depth_max;++depth)
 			{
-				engine.nodes_searched = 0;
-				if (engine.board.side_to_move == White)
-					search_result = engine.search<White, true, true>(depth);
+				engine_for_go_command.nodes_searched = 0;
+				if (engine_for_go_command.board.side_to_move == White)
+					search_result = engine_for_go_command.search<White, true, true>(depth);
 				else
-					search_result = engine.search<Black, true, true>(depth);
+					search_result = engine_for_go_command.search<Black, true, true>(depth);
 				time_passed = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
-				out << "info depth " << static_cast<int>(depth) << " score cp " << search_result.second << " nodes " << engine.nodes_searched << " nps " << (time_passed > 0 ? engine.nodes_searched * 1'000'000 / time_passed : 0) << " time " << static_cast<int>(std::round((static_cast<float>(time_passed)/1000.0))) << std::endl;
+				out << "info depth " << static_cast<int>(depth) << " score cp " << search_result.second << " nodes " << engine_for_go_command.nodes_searched << " nps " << (time_passed > 0 ? engine.nodes_searched * 1'000'000 / time_passed : 0) << " time " << static_cast<int>(std::round((static_cast<float>(time_passed)/1000.0))) << std::endl;
 			}
 		}
 		else
@@ -308,24 +264,24 @@ void go_command_function(std::vector<std::string> args)
 				winc = 0;
 			if (binc == -1)
 				binc = 0;
-			uint64_t time_to_think = get_time_to_think_in_ms(&engine, wtime, btime, winc, binc);
+			uint64_t time_to_think = get_time_to_think_in_ms(&engine_for_go_command, wtime, btime, winc, binc);
 			auto start_time = std::chrono::high_resolution_clock::now();
 			float effective_branching_factor_estimate = 1;
 			long previous_time_passed = -1;
 			for (uint8_t depth = 1;true;++depth)
 			{
-				engine.nodes_searched = 0;
-				if (engine.board.side_to_move == White)
-					search_result = engine.search<White, true, true>(depth);
+				engine_for_go_command.nodes_searched = 0;
+				if (engine_for_go_command.board.side_to_move == White)
+					search_result = engine_for_go_command.search<White, true, true>(depth);
 				else
-					search_result = engine.search<Black, true, true>(depth);
+					search_result = engine_for_go_command.search<Black, true, true>(depth);
 				previous_time_passed = time_passed;
 				time_passed = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
 				if (previous_time_passed != -1)
 				{
 					effective_branching_factor_estimate = time_passed/static_cast<float>(previous_time_passed);
 				}
-				out << "info depth " << static_cast<int>(depth) << " score cp " << search_result.second << " nodes " << engine.nodes_searched << " nps " << (time_passed > 0 ? engine.nodes_searched * 1'000'000 / time_passed : 0) << " time " << static_cast<int>(std::round((static_cast<float>(time_passed)/1000.0))) << std::endl;
+				out << "info depth " << static_cast<int>(depth) << " score cp " << search_result.second << " nodes " << engine_for_go_command.nodes_searched << " nps " << (time_passed > 0 ? engine.nodes_searched * 1'000'000 / time_passed : 0) << " time " << static_cast<int>(std::round((static_cast<float>(time_passed)/1000.0))) << std::endl;
 				long estimated_time_for_next_depth = time_passed * effective_branching_factor_estimate;
 				if (estimated_time_for_next_depth * 1.2 > time_to_think * 1000)//*1000 is neccessary we measure time in microseconds but time_to_think is in milliseconds
 					break;
@@ -333,14 +289,12 @@ void go_command_function(std::vector<std::string> args)
 		}
 		
 		out << "bestmove " << Utils::move_to_string(search_result.first) << std::endl;
-		engine_mutex.unlock();
 
 
 	}
 }
 void position_command_function(std::vector<std::string> args)
 {
-	HandleRunningThread handle_thread;
 	for (int i = 0;i<args.size();++i)
 	{
 		if (args[i]=="fen")
@@ -387,63 +341,43 @@ void position_command_function(std::vector<std::string> args)
 		}
 		
 	}
-	board_copy = engine.board;
-	board_copy_mutex.unlock();
-	engine_mutex.unlock();
 }
 
 
 void fen_command_function(std::vector<std::string> args)
 {
-	HandleRunningThread handle_thread;
-	std::osyncstream out(std::cout);
-	out << std::emit_on_flush;
-	out << Utils::get_fen(&board_copy) << std::endl;
-	board_copy_mutex.unlock();
+	std::cout << std::emit_on_flush;
+	std::cout << Utils::get_fen(&engine.board) << std::endl;
 }
 
 void hash_command_function(std::vector<std::string> args)
 {
-	HandleRunningThread handle_thread;
-	std::osyncstream out(std::cout);
-	out << std::emit_on_flush;
-	out << std::hex << board_copy.positions_stack[engine.board.current_position_idx].hash << std::dec << std::endl;
-	board_copy_mutex.unlock();
+	std::cout << std::emit_on_flush;
+	std::cout << std::hex << engine.board.positions_stack[engine.board.current_position_idx].hash << std::dec << std::endl;
 }
 
 void move_command_function(std::vector<std::string> args)
 {
-	HandleRunningThread handle_thread;
 	if (args.empty())
 		return;
 	Move move_temp = Utils::string_to_move(&engine.board, args[0]);
 	engine.board.make_move(move_temp);
-	board_copy = engine.board;
-	board_copy_mutex.unlock();
-	engine_mutex.unlock();
 }
 
 void unmove_command_function(std::vector<std::string> args)
 {
-	HandleRunningThread handle_thread;
 	engine.board.unmake_move();
-	board_copy = engine.board;
-	board_copy_mutex.unlock();
-	engine_mutex.unlock();
 }
 
 void eval_command_function(std::vector<std::string> args)
 {
-	HandleRunningThread handle_thread;
-	std::osyncstream out(std::cout);
-	out << std::emit_on_flush;
+	std::cout << std::emit_on_flush;
 	int16_t eval;
 	if (engine.board.side_to_move == White)
 		eval = engine.se.evaluate<White>();
 	else
 		eval = engine.se.evaluate<Black>();
-	out << "Static evaluation: " << eval << std::endl;
-	engine_mutex.unlock();
+	std::cout << "Static evaluation: " << eval << std::endl;
 }
 
 
@@ -483,32 +417,31 @@ std::vector<std::string> tokenize(const std::string& input)
 	return tokens;
 }
 
+
+
 int main()
 {
 	Utils::initialize_board(&engine.board);
-	board_copy = engine.board;//no need to lock here since no other thread is running yet
-	std::unordered_map<std::string, std::pair<std::function<void(std::vector<std::string>)>, std::vector<std::mutex*>>> commands_functions = {
-		{"d", std::make_pair(d_command_function, std::vector<std::mutex*>{&board_copy_mutex})},
-		{"go", std::make_pair(go_command_function, std::vector<std::mutex*>{&engine_mutex})},
-		{"position", std::make_pair(position_command_function, std::vector<std::mutex*>{&engine_mutex, &board_copy_mutex})},
-		{"isready", std::make_pair(isready_command_function, std::vector<std::mutex*>{})},
-		{"uci", std::make_pair(uci_command_function, std::vector<std::mutex*>{})},
-		{"debug", std::make_pair(debug_command_function, std::vector<std::mutex*>{})},
-		{"ucinewgame", std::make_pair(do_nothing_command_function, std::vector<std::mutex*>{})},
+	std::unordered_map<std::string, std::function<void(std::vector<std::string>)>> commands_functions = {
+		{"d", d_command_function},
+		{"go", go_command_function},
+		{"position", position_command_function},
+		{"isready", isready_command_function},
+		{"uci", uci_command_function},
+		{"debug", debug_command_function},
+		{"ucinewgame", do_nothing_command_function},
 		//non uci commands
-		{"fen", std::make_pair(fen_command_function, std::vector<std::mutex*>{&board_copy_mutex})},
-		{"hash", std::make_pair(hash_command_function, std::vector<std::mutex*>{&board_copy_mutex})},
-		{"move", std::make_pair(move_command_function, std::vector<std::mutex*>{&engine_mutex, &board_copy_mutex})},
-		{"unmove", std::make_pair(unmove_command_function, std::vector<std::mutex*>{&engine_mutex, &board_copy_mutex})},
-		{"eval", std::make_pair(eval_command_function, std::vector<std::mutex*>{&engine_mutex})},
+		{"fen", fen_command_function},
+		{"hash", hash_command_function},
+		{"move", move_command_function},
+		{"unmove", unmove_command_function},
+		{"eval", eval_command_function},
 	};
 	
 	std::unordered_map<std::thread::id, std::thread> threads;
-	std::osyncstream out(std::cout);
-	out << std::emit_on_flush;
 	std::string input_line;
 	std::vector<std::string> tokens;
-	uint32_t command_count = 0;
+	std::thread t;
 	while (true)
 	{
 		std::getline(std::cin, input_line);
@@ -519,52 +452,29 @@ int main()
 		{
 			break;//exit
 		}
-		if (commands_functions.contains(tokens[0]))
+		if (commands_functions.contains(tokens[0]) && tokens[0]!="go")
 		{
-			running_thread_being_added_mutex.lock();
-			for (std::mutex* mtx : commands_functions[tokens[0]].second)
+			commands_functions[tokens[0]](std::vector<std::string>(tokens.begin()+1, tokens.end()));
+		}
+		else if (tokens[0] == "go")
+		{
+			if (!go_command_is_running.load(std::memory_order_acquire))
 			{
-				mtx->lock();
+				if (t.joinable())
+					t.join();
+				engine_for_go_command = Engine(engine);
+				go_command_is_running.store(true, std::memory_order_release);
+				t = std::thread(commands_functions[tokens[0]], std::vector<std::string>(tokens.begin()+1, tokens.end()));
 			}
-			std::thread t(commands_functions[tokens[0]].first, std::vector<std::string>(tokens.begin()+1, tokens.end()));
-			running_threads_mutex.lock();
-			running_threads.insert(t.get_id());
-			running_threads_mutex.unlock();
-			running_thread_being_added_mutex.unlock();
-			threads.emplace(t.get_id(), std::move(t));
-			++command_count;
 		}
 		else
 		{
-			out << "Unknown command: " << tokens[0] << std::endl;
+			std::cout << "Unknown command: " << tokens[0] << std::endl;
 			continue;
 		}
-		//clean up finished threads
-		for (auto it = threads.begin(); it != threads.end();)
-		{
-			running_threads_mutex.lock();
-			if (!running_threads.contains(it->first))
-			{
-				running_threads_mutex.unlock();
-				if (it->second.joinable())
-					it->second.join();
-				it = threads.erase(it);
-			}
-			else
-			{
-				running_threads_mutex.unlock();
-				++it;
-			}
-		}
-
 	}
+	t.join();
 
-	//join all threads
-	for (auto it = threads.begin(); it != threads.end(); ++it)
-	{
-		if (it->second.joinable())
-			it->second.join();
-	}
 	
 	return 0;
 }
