@@ -24,6 +24,8 @@ std::atomic<bool> debug_mode = false;
 std::unordered_set<std::thread::id> running_threads;
 std::mutex running_threads_mutex;
 std::mutex running_thread_being_added_mutex;//locked before starting a thread and unclocked after adding an id. The thread locks before constructing the HandleRunningThread.
+std::atomic<uint32_t> number_of_isready_commands_running = 0;//in case 1 isready command is running and another is called, to preven commands blocking eachother, the one started later exits, first incrementing that varibale and when the function prints "readyok\n" it prints as many readyoks as many commands have be run and not yet finished
+
 
 class HandleRunningThread
 {
@@ -51,7 +53,6 @@ void d_command_function(std::vector<std::string> args)
 {
 	HandleRunningThread handle_thread;
 	std::osyncstream out(std::cout);//necessary to pass the out as an lvalue not rvalue
-	board_copy_mutex.lock();
 	Utils::display_board(&board_copy, out);
 	board_copy_mutex.unlock();
 }
@@ -59,6 +60,10 @@ void d_command_function(std::vector<std::string> args)
 void isready_command_function(std::vector<std::string> args)
 {
 	HandleRunningThread handle_thread;
+	if (number_of_isready_commands_running.fetch_add(1) != 0)
+	{
+		return;
+	}
 	while (true)
 	{
 		running_threads_mutex.lock();
@@ -71,7 +76,11 @@ void isready_command_function(std::vector<std::string> args)
 		std::this_thread::sleep_for(std::chrono::milliseconds(3));//arbitrary small sleep to avoid busy waiting without making the engine unresponsive for too long
 	}
 	std::osyncstream out(std::cout);
-	out << "readyok" << std::endl;
+	uint32_t n = number_of_isready_commands_running.exchange(0);
+	for (uint32_t i = 0;i<n;++i)
+	{
+		out << "readyok" << std::endl;
+	}
 }
 
 void uci_command_function(std::vector<std::string> args)
@@ -128,7 +137,6 @@ void go_command_function(std::vector<std::string> args)
 			return;
 		}
 		
-		engine_mutex.lock();
 		if (engine.board.side_to_move == White)
 		{
 			engine.mg.generate_pseudo_legal_moves<White>();
@@ -279,7 +287,6 @@ void go_command_function(std::vector<std::string> args)
 			return;
 		}
 		std::pair<Move, int16_t> search_result;
-		engine_mutex.lock();
 		long time_passed = -1;
 		if (depth_max != -1)
 		{
@@ -334,7 +341,6 @@ void go_command_function(std::vector<std::string> args)
 void position_command_function(std::vector<std::string> args)
 {
 	HandleRunningThread handle_thread;
-	engine_mutex.lock();
 	for (int i = 0;i<args.size();++i)
 	{
 		if (args[i]=="fen")
@@ -381,7 +387,6 @@ void position_command_function(std::vector<std::string> args)
 		}
 		
 	}
-	board_copy_mutex.lock();
 	board_copy = engine.board;
 	board_copy_mutex.unlock();
 	engine_mutex.unlock();
@@ -393,7 +398,6 @@ void fen_command_function(std::vector<std::string> args)
 	HandleRunningThread handle_thread;
 	std::osyncstream out(std::cout);
 	out << std::emit_on_flush;
-	board_copy_mutex.lock();
 	out << Utils::get_fen(&board_copy) << std::endl;
 	board_copy_mutex.unlock();
 }
@@ -403,7 +407,6 @@ void hash_command_function(std::vector<std::string> args)
 	HandleRunningThread handle_thread;
 	std::osyncstream out(std::cout);
 	out << std::emit_on_flush;
-	board_copy_mutex.lock();
 	out << std::hex << board_copy.positions_stack[engine.board.current_position_idx].hash << std::dec << std::endl;
 	board_copy_mutex.unlock();
 }
@@ -413,10 +416,8 @@ void move_command_function(std::vector<std::string> args)
 	HandleRunningThread handle_thread;
 	if (args.empty())
 		return;
-	engine_mutex.lock();
 	Move move_temp = Utils::string_to_move(&engine.board, args[0]);
 	engine.board.make_move(move_temp);
-	board_copy_mutex.lock();
 	board_copy = engine.board;
 	board_copy_mutex.unlock();
 	engine_mutex.unlock();
@@ -425,9 +426,7 @@ void move_command_function(std::vector<std::string> args)
 void unmove_command_function(std::vector<std::string> args)
 {
 	HandleRunningThread handle_thread;
-	engine_mutex.lock();
 	engine.board.unmake_move();
-	board_copy_mutex.lock();
 	board_copy = engine.board;
 	board_copy_mutex.unlock();
 	engine_mutex.unlock();
@@ -438,7 +437,6 @@ void eval_command_function(std::vector<std::string> args)
 	HandleRunningThread handle_thread;
 	std::osyncstream out(std::cout);
 	out << std::emit_on_flush;
-	engine_mutex.lock();
 	int16_t eval;
 	if (engine.board.side_to_move == White)
 		eval = engine.se.evaluate<White>();
@@ -489,20 +487,20 @@ int main()
 {
 	Utils::initialize_board(&engine.board);
 	board_copy = engine.board;//no need to lock here since no other thread is running yet
-	std::unordered_map<std::string, std::function<void(std::vector<std::string>)>> commands_functions = {
-		{"d", d_command_function},
-		{"go", go_command_function},
-		{"position", position_command_function},
-		{"isready", isready_command_function},
-		{"uci", uci_command_function},
-		{"debug", debug_command_function},
-		{"ucinewgame", do_nothing_command_function},
+	std::unordered_map<std::string, std::pair<std::function<void(std::vector<std::string>)>, std::vector<std::mutex*>>> commands_functions = {
+		{"d", std::make_pair(d_command_function, std::vector<std::mutex*>{&board_copy_mutex})},
+		{"go", std::make_pair(go_command_function, std::vector<std::mutex*>{&engine_mutex})},
+		{"position", std::make_pair(position_command_function, std::vector<std::mutex*>{&engine_mutex, &board_copy_mutex})},
+		{"isready", std::make_pair(isready_command_function, std::vector<std::mutex*>{})},
+		{"uci", std::make_pair(uci_command_function, std::vector<std::mutex*>{})},
+		{"debug", std::make_pair(debug_command_function, std::vector<std::mutex*>{})},
+		{"ucinewgame", std::make_pair(do_nothing_command_function, std::vector<std::mutex*>{})},
 		//non uci commands
-		{"fen", fen_command_function},
-		{"hash", hash_command_function},
-		{"move", move_command_function},
-		{"unmove", unmove_command_function},
-		{"eval", eval_command_function},
+		{"fen", std::make_pair(fen_command_function, std::vector<std::mutex*>{&board_copy_mutex})},
+		{"hash", std::make_pair(hash_command_function, std::vector<std::mutex*>{&board_copy_mutex})},
+		{"move", std::make_pair(move_command_function, std::vector<std::mutex*>{&engine_mutex, &board_copy_mutex})},
+		{"unmove", std::make_pair(unmove_command_function, std::vector<std::mutex*>{&engine_mutex, &board_copy_mutex})},
+		{"eval", std::make_pair(eval_command_function, std::vector<std::mutex*>{&engine_mutex})},
 	};
 	
 	std::unordered_map<std::thread::id, std::thread> threads;
@@ -524,7 +522,11 @@ int main()
 		if (commands_functions.contains(tokens[0]))
 		{
 			running_thread_being_added_mutex.lock();
-			std::thread t(commands_functions[tokens[0]], std::vector<std::string>(tokens.begin()+1, tokens.end()));
+			for (std::mutex* mtx : commands_functions[tokens[0]].second)
+			{
+				mtx->lock();
+			}
+			std::thread t(commands_functions[tokens[0]].first, std::vector<std::string>(tokens.begin()+1, tokens.end()));
 			running_threads_mutex.lock();
 			running_threads.insert(t.get_id());
 			running_threads_mutex.unlock();
