@@ -7,10 +7,11 @@ Engine::Engine()
 {
 	normal_search_nodes_searched = 0;
 	quiescence_search_nodes_searched = 0;
+	stop_search.store(false, std::memory_order_relaxed);
 }
 
 Engine::Engine(const Engine& other)
-	:board(other.board), mg(&board), se(&board, &mg), normal_search_nodes_searched(other.normal_search_nodes_searched), quiescence_search_nodes_searched(other.quiescence_search_nodes_searched)
+	:board(other.board), mg(&board), se(&board, &mg), normal_search_nodes_searched(other.normal_search_nodes_searched), quiescence_search_nodes_searched(other.quiescence_search_nodes_searched), stop_search(false)
 { }
 
 Engine& Engine::operator=(const Engine& other)
@@ -20,16 +21,23 @@ Engine& Engine::operator=(const Engine& other)
 	se = StaticEval(&board, &mg);
 	normal_search_nodes_searched = other.normal_search_nodes_searched;
 	quiescence_search_nodes_searched = other.quiescence_search_nodes_searched;
+	stop_search.store(false, std::memory_order_relaxed);
 	return *this;
 }
 
 template<Color color>
 uint64_t Engine::perft(uint8_t depth)
 {
+	if (depth >= 3)
+	{
+		if (stop_search.load(std::memory_order_relaxed))
+			return 0;
+	}
 	mg.generate_pseudo_legal_moves<color>();
 	mg.filter_pseudo_legal_moves<color>();
 	
 	if (depth == 1) return board.positions_stack[board.current_position_idx].legal_moves_length;
+	
 	uint64_t count = 0;
 	for (int i = 0;i<board.positions_stack[board.current_position_idx].legal_moves_length;++i)
 	{
@@ -45,6 +53,16 @@ template<Color color, bool root, bool qsearch, bool count_searched_nodes>
 requires(!(qsearch && root))
 std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8_t depth, int16_t alpha, int16_t beta)
 {
+	if constexpr (!qsearch)
+	{
+		if (stop_search.load(std::memory_order_relaxed))
+		{
+			if constexpr (root)
+				return std::pair<Move, int16_t>(0, 0);
+			else
+				return MAX_EVAL;//we return max eval so the parent node will not choose that node, since it's good for us it's bad for them
+		}
+	}
 	if constexpr (count_searched_nodes)
 	{
 		if constexpr (qsearch)

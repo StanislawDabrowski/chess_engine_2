@@ -24,6 +24,7 @@ public:
 	~HandleGoCommandExit()
 	{
 		go_command_is_running.store(false, std::memory_order_release);
+		engine.stop_search.store(false, std::memory_order_release);
 	}
 };
 
@@ -243,6 +244,7 @@ void go_command_function(std::vector<std::string> args)
 			return;
 		}
 		std::pair<Move, int16_t> search_result;
+		std::pair<Move, int16_t> search_result_temp;
 		long time_passed = -1;
 		if (depth_max != -1)
 		{
@@ -252,9 +254,13 @@ void go_command_function(std::vector<std::string> args)
 				engine_for_go_command.normal_search_nodes_searched = 0;
 				engine_for_go_command.quiescence_search_nodes_searched = 0;
 				if (engine_for_go_command.board.side_to_move == White)
-					search_result = engine_for_go_command.search<White, true, false, true>(depth);
+					search_result_temp = engine_for_go_command.search<White, true, false, true>(depth);
 				else
-					search_result = engine_for_go_command.search<Black, true, false, true>(depth);
+					search_result_temp = engine_for_go_command.search<Black, true, false, true>(depth);
+				if (engine_for_go_command.stop_search.load(std::memory_order_relaxed))
+					break;
+				else
+					search_result = search_result_temp;
 				time_passed = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
 				out << "info depth " << static_cast<int>(depth) << " score cp " << search_result.second << " nodes " << engine_for_go_command.normal_search_nodes_searched+engine_for_go_command.quiescence_search_nodes_searched << " nps " << (time_passed > 0 ? (engine_for_go_command.normal_search_nodes_searched+engine_for_go_command.quiescence_search_nodes_searched) * 1'000'000 / time_passed : 0) << " time " << static_cast<int>(std::round((static_cast<float>(time_passed)/1000.0))) << std::endl;
 			}
@@ -274,9 +280,13 @@ void go_command_function(std::vector<std::string> args)
 				engine_for_go_command.normal_search_nodes_searched = 0;
 				engine_for_go_command.quiescence_search_nodes_searched = 0;
 				if (engine_for_go_command.board.side_to_move == White)
-					search_result = engine_for_go_command.search<White, true, false, true>(depth);
+					search_result_temp = engine_for_go_command.search<White, true, false, true>(depth);
 				else
-					search_result = engine_for_go_command.search<Black, true, false, true>(depth);
+					search_result_temp = engine_for_go_command.search<Black, true, false, true>(depth);
+				if (engine_for_go_command.stop_search.load(std::memory_order_relaxed))
+					break;
+				else
+					search_result = search_result_temp;
 				previous_time_passed = time_passed;
 				time_passed = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
 				if (previous_time_passed != -1)
@@ -295,6 +305,12 @@ void go_command_function(std::vector<std::string> args)
 
 	}
 }
+
+void stop_command_function(std::vector<std::string> args)
+{
+	engine_for_go_command.stop_search.store(true, std::memory_order_release);
+}
+
 void position_command_function(std::vector<std::string> args)
 {
 	for (int i = 0;i<args.size();++i)
@@ -428,6 +444,7 @@ int main()
 	std::unordered_map<std::string, std::function<void(std::vector<std::string>)>> commands_functions = {
 		{"d", d_command_function},
 		{"go", go_command_function},
+		{"stop", stop_command_function},
 		{"position", position_command_function},
 		{"isready", isready_command_function},
 		{"uci", uci_command_function},
