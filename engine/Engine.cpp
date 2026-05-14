@@ -9,14 +9,14 @@ Engine::Engine()
 }
 
 Engine::Engine(const Engine& other)
-	:board(other.board), mg(&board), se(&board), nodes_searched(other.nodes_searched)
+	:board(other.board), mg(&board), se(&board, &mg), nodes_searched(other.nodes_searched)
 { }
 
 Engine& Engine::operator=(const Engine& other)
 {
 	board = other.board;
 	mg = MoveGenerator(&board);
-	se = StaticEval(&board);
+	se = StaticEval(&board, &mg);
 	nodes_searched = other.nodes_searched;
 	return *this;
 }
