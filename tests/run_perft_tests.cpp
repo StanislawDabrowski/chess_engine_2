@@ -6,6 +6,7 @@
 
 int main(int argc, char* argv[])
 {
+	MoveGenerator::initialize_static_members();
 	Engine engine = Engine();
 	if (argc < 2)
 	{

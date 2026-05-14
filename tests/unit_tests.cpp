@@ -73,7 +73,6 @@ void MoveGeneratorTests::in_check_test()
 	};
 	Board board = Board();
 	MoveGenerator move_generator(&board);
-	move_generator.initialize_attack_tables();
 	bool result;
 	bool any_test_failed = false;
 	for (int i = 0; i < sizeof(test_cases) / sizeof(test_cases[0]); ++i)

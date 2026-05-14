@@ -5,7 +5,6 @@
 Engine::Engine()
 	:board(), mg(&board), se(&board)
 {
-	mg.initialize_attack_tables();
 	nodes_searched = 0;
 }
 

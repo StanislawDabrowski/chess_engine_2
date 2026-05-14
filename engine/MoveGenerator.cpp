@@ -13,13 +13,38 @@
 
 typedef uint16_t SimpleMove;
 
+
+Bitboard MoveGenerator::bishop_relevant_blockers[64];
+Bitboard MoveGenerator::rook_relevant_blockers[64];
+Bitboard MoveGenerator::bishop_attack_tables[64][512];
+Bitboard MoveGenerator::rook_attack_tables[64][4096];
+Bitboard MoveGenerator::knight_attack_tables[64];
+Bitboard MoveGenerator::king_attack_tables[64];
+Bitboard MoveGenerator::pawn_attack_tables[2][64];
+
+Bitboard MoveGenerator::bishop_square_blockers[64][64];
+Bitboard MoveGenerator::rook_square_blockers[64][64];
+Bitboard MoveGenerator::bishop_blockers[64][512];
+Bitboard MoveGenerator::rook_blockers[64][4096];
+
+Bitboard MoveGenerator::white_kingside_castle_knight_attack_mask;
+Bitboard MoveGenerator::white_queenside_castle_knight_attack_mask;
+Bitboard MoveGenerator::black_kingside_castle_knight_attack_mask;
+Bitboard MoveGenerator::black_queenside_castle_knight_attack_mask;
+
+Bitboard MoveGenerator::white_kingside_castle_pawn_attack_mask;
+Bitboard MoveGenerator::white_queenside_castle_pawn_attack_mask;
+Bitboard MoveGenerator::black_kingside_castle_pawn_attack_mask;
+Bitboard MoveGenerator::black_queenside_castle_pawn_attack_mask;
+
+Bitboard MoveGenerator::white_kingside_castle_king_attack_mask;
+Bitboard MoveGenerator::white_queenside_castle_king_attack_mask;
+Bitboard MoveGenerator::black_kingside_castle_king_attack_mask;
+Bitboard MoveGenerator::black_queenside_castle_king_attack_mask;
+
 MoveGenerator::MoveGenerator(Board* board)
 	: board(board)
-{
-	generate_relevant_blockers_and_square_blockers();
-
-	
-}
+{ }
 
 void MoveGenerator::generate_relevant_blockers_and_square_blockers()
 {
@@ -208,7 +233,6 @@ Bitboard MoveGenerator::generate_bishop_attack_table(uint8_t square, uint16_t oc
 	}
 	return bishop_mask;
 }
-
 void MoveGenerator::initialize_attack_tables()
 {
 	constexpr int rook_directions[] = { 8, -8, 1, -1 };
@@ -413,6 +437,12 @@ void MoveGenerator::initialize_attack_tables()
 	white_queenside_castle_king_attack_mask = king_attack_tables[4] | king_attack_tables[3] | king_attack_tables[2];
 	black_kingside_castle_king_attack_mask = king_attack_tables[60] | king_attack_tables[61] | king_attack_tables[62];
 	black_queenside_castle_king_attack_mask = king_attack_tables[60] | king_attack_tables[59] | king_attack_tables[58];
+}
+
+void MoveGenerator::initialize_static_members()
+{
+	generate_relevant_blockers_and_square_blockers();
+	initialize_attack_tables();
 }
 
 template<uint8_t castle_type>//0 - white kingside, 1 - white queenside, 2 - black kingside, 3 - black queenside

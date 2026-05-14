@@ -421,6 +421,7 @@ std::vector<std::string> tokenize(const std::string& input)
 
 int main()
 {
+	MoveGenerator::initialize_static_members();
 	Utils::initialize_board(&engine.board);
 	std::unordered_map<std::string, std::function<void(std::vector<std::string>)>> commands_functions = {
 		{"d", d_command_function},
