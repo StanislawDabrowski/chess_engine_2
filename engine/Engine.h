@@ -2,7 +2,7 @@
 #include "Board.h"
 #include "MoveGenerator.h"
 #include "StaticEval.h"
-#include <type_traits>
+#include <atomic>
 
 
 class Engine
@@ -12,6 +12,7 @@ public:
 	MoveGenerator mg;
 	StaticEval se;
 	uint64_t nodes_searched;
+	std::atomic<bool> stop_search;
 
 	static constexpr int16_t MAX_EVAL = 32767;
 	static constexpr int16_t MIN_EVAL = -32767;//needs to be -32767 so -MIN_EVAL is MAX_EVAL, not itself, which due to integer overflow would probably (it's UB), be the case
