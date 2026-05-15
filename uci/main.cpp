@@ -253,9 +253,9 @@ void go_command_function(std::vector<std::string> args)
 			{
 				engine_for_go_command.nodes_searched = 0;
 				if (engine_for_go_command.board.side_to_move == White)
-					search_result = engine_for_go_command.search<White, true, true>(depth);
+					search_result_temp = engine_for_go_command.search<White, true, true>(depth);
 				else
-					search_result = engine_for_go_command.search<Black, true, true>(depth);
+					search_result_temp = engine_for_go_command.search<Black, true, true>(depth);
 				if (engine_for_go_command.stop_search.load(std::memory_order_relaxed))
 					break;
 				else
@@ -278,9 +278,9 @@ void go_command_function(std::vector<std::string> args)
 			{
 				engine_for_go_command.nodes_searched = 0;
 				if (engine_for_go_command.board.side_to_move == White)
-					search_result = engine_for_go_command.search<White, true, true>(depth);
+					search_result_temp = engine_for_go_command.search<White, true, true>(depth);
 				else
-					search_result = engine_for_go_command.search<Black, true, true>(depth);
+					search_result_temp = engine_for_go_command.search<Black, true, true>(depth);
 				if (engine_for_go_command.stop_search.load(std::memory_order_relaxed))
 					break;
 				else
