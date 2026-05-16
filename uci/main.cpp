@@ -481,7 +481,7 @@ int main()
 				if (t.joinable())
 					t.join();
 				engine_for_go_command = Engine(engine);
-				go_command_is_running.store(true, std::memory_order_release);
+				go_command_is_running.store(true, std::memory_order_seq_cst);
 				t = std::thread(commands_functions[tokens[0]], std::vector<std::string>(tokens.begin()+1, tokens.end()));
 			}
 		}
