@@ -102,7 +102,13 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 			alpha = best_score;
 		}
 	}
-
+	if (depth == 0 && !qsearch)
+	{
+		if constexpr (root)
+			return std::pair<Move, int16_t>(0, search<color, false, true, count_searched_nodes>(0, -beta, -alpha));
+		else
+			return search<color, false, true, count_searched_nodes>(0, -beta, -alpha);
+	}
 	if constexpr (qsearch)
 		mg.generate_noisy_pseudo_legal_moves<color>();
 	else
