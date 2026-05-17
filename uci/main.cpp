@@ -243,13 +243,13 @@ void go_command_function(std::vector<std::string> args)
 		{
 			return;
 		}
-		std::pair<Move, int16_t> search_result;
+		std::pair<Move, int16_t> search_result = std::make_pair(0, 0);
 		std::pair<Move, int16_t> search_result_temp;
 		long time_passed = -1;
 		if (depth_max != -1)
 		{
 			auto start_time = std::chrono::high_resolution_clock::now();
-			for (uint8_t depth = 1;depth<=depth_max;++depth)
+			for (uint8_t depth = 1;depth<=depth_max && std::abs((engine.board.side_to_move == White ? Engine::MAX_EVAL : Engine::MIN_EVAL)-search_result.second)>=depth;++depth)
 			{
 				engine_for_go_command.nodes_searched = 0;
 				if (engine_for_go_command.board.side_to_move == White)
@@ -274,7 +274,7 @@ void go_command_function(std::vector<std::string> args)
 			auto start_time = std::chrono::high_resolution_clock::now();
 			float effective_branching_factor_estimate = 1;
 			long previous_time_passed = -1;
-			for (uint8_t depth = 1;true;++depth)
+			for (uint8_t depth = 1;true && std::abs((engine.board.side_to_move == White ? Engine::MAX_EVAL : Engine::MIN_EVAL)-search_result.second)>=depth;++depth)
 			{
 				engine_for_go_command.nodes_searched = 0;
 				if (engine_for_go_command.board.side_to_move == White)
