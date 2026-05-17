@@ -148,7 +148,6 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 			--j;
 		}
 	}
-
 	if constexpr (!qsearch)
 	{
 		best_score = MIN_EVAL - 1;//MIN_EVAL is -2^15+1, so MIN_EVAL-1 does not wrap around. Is set to MIN_EVAL-1 for best_moves to be always initialized
