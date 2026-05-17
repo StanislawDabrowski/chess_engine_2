@@ -25,9 +25,9 @@ namespace MoveOrdering
 		20,   //BishopMove
 		15,   //RookMove
 		10,   //QueenMove
-		40,    //KingMove
-		30,    //PawnSinglePush
-		30,    //PawnDoublePush
+		40,   //KingMove
+		30,   //PawnSinglePush
+		30,   //PawnDoublePush
 		150,  //PawnCapture
 		70,   //EnPassant - if en passant is legal while we are in check that measn the checing piece is the panw we are taking (ther is no possible position where the en passant will interpose a check)
 		0,    //Castle - never occurs in check
@@ -42,15 +42,15 @@ namespace MoveOrdering
 		30,   //RookMove
 		15,   //QueenMove
 		0,    //KingMove - never occurs in qsearch
-		0,    //PawnSinglePush - always a check
-		0,    //PawnDoublePush - always a check
+		80,   //PawnSinglePush - always a check
+		80,   //PawnDoublePush - always a check
 		150,  //PawnCapture
-		100,   //EnPassant - always a check - because of the very unique nature of en passant, en passant check exposes king significantly, hence in that specific case it's a very promising move
+		100,  //EnPassant - always a check - because of the very unique nature of en passant, en passant check exposes king significantly, hence in that specific case it's a very promising move
 		0,    //Castle - never occurs in qsearch
 		500,  //PromotionToQueen
-		0, //PromotionToKnight - never occurs in qsearch
-		0, //PromotionToRook - never occurs in qsearch
-		0, //PromotionToBishop - never occurs in qsearch
+		0,    //PromotionToKnight - never occurs in qsearch
+		0,    //PromotionToRook - never occurs in qsearch
+		0,    //PromotionToBishop - never occurs in qsearch
 	};
 	
 
