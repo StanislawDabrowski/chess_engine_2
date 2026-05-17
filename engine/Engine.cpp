@@ -135,7 +135,21 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 	//move ordering
 	for (int i = 0;i<board.positions_stack[board.current_position_idx].legal_moves_length;++i)
 	{
-		board.positions_stack[board.current_position_idx].move_ordering_scores[i] = MoveOrdering::MoveType_score[board.positions_stack[board.current_position_idx].legal_moves[i] >> 12];
+		if (mg.checks)
+		{
+			board.positions_stack[board.current_position_idx].move_ordering_scores[i] = MoveOrdering::MoveType_score_in_check[board.positions_stack[board.current_position_idx].legal_moves[i] >> 12];
+		}
+		else
+		{
+			if constexpr (qsearch)
+			{
+				board.positions_stack[board.current_position_idx].move_ordering_scores[i] = MoveOrdering::MoveType_score_qsearch_no_check[board.positions_stack[board.current_position_idx].legal_moves[i] >> 12];
+			}
+			else
+			{
+				board.positions_stack[board.current_position_idx].move_ordering_scores[i] = MoveOrdering::MoveType_score_no_check[board.positions_stack[board.current_position_idx].legal_moves[i] >> 12];
+			}
+		}
 	}
 	//sort moves with insertion sort
 	for (int i = 1;i<board.positions_stack[board.current_position_idx].legal_moves_length;++i)
