@@ -94,6 +94,13 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 			alpha = best_score;
 		}
 	}
+	if (depth == 0 && !qsearch)
+	{
+		if constexpr (root)
+			return std::pair<Move, int16_t>(0, search<color, false, true, count_searched_nodes>(0, -beta, -alpha));
+		else
+			return search<color, false, true, count_searched_nodes>(0, -beta, -alpha);
+	}
 	if constexpr (qsearch)
 		mg.generate_noisy_pseudo_legal_moves<color>();
 	else
@@ -115,14 +122,6 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 				return eval;
 		}
 	}
-	if (depth == 0 && !qsearch)
-	{
-		if constexpr (root)
-			return std::pair<Move, int16_t>(0, search<color, false, true, count_searched_nodes>(0, -beta, -alpha));
-		else
-			return search<color, false, true, count_searched_nodes>(0, -beta, -alpha);
-	}
-
 	if constexpr (!qsearch)
 	{
 		best_score = MIN_EVAL - 1;//MIN_EVAL is -2^15+1, so MIN_EVAL-1 does not wrap around. Is set to MIN_EVAL-1 for best_moves to be always initialized
