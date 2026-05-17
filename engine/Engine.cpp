@@ -1,6 +1,7 @@
 #include "Engine.h"
 #include "MoveGenerator.h"
 #include "Color.h"
+#include "MoveOrdering.h"
 
 Engine::Engine()
 	:board(), mg(&board), se(&board, &mg)
@@ -92,6 +93,24 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 		else
 			return eval;
 	}
+
+	//move ordering
+	for (int i = 0;i<board.positions_stack[board.current_position_idx].legal_moves_length;++i)
+	{
+		board.positions_stack[board.current_position_idx].move_ordering_scores[i] = MoveOrdering::MoveType_score[board.positions_stack[board.current_position_idx].legal_moves[i] >> 12];
+	}
+	//sort moves with insertion sort
+	for (int i = 1;i<board.positions_stack[board.current_position_idx].legal_moves_length;++i)
+	{
+		int j = i;
+		while (j > 0 && board.positions_stack[board.current_position_idx].move_ordering_scores[j] > board.positions_stack[board.current_position_idx].move_ordering_scores[j-1])
+		{
+			std::swap(board.positions_stack[board.current_position_idx].move_ordering_scores[j], board.positions_stack[board.current_position_idx].move_ordering_scores[j-1]);
+			std::swap(board.positions_stack[board.current_position_idx].legal_moves[j], board.positions_stack[board.current_position_idx].legal_moves[j-1]);
+			--j;
+		}
+	}
+
 	int16_t best_score = MIN_EVAL - 1;//MIN_EVAL is -2^15+1, so MIN_EVAL-1 does not wrap around. Is set to MIN_EVAL-1 for best_moves to be always initialized
 	Move best_move;	
 	for (int i = 0;i<board.positions_stack[board.current_position_idx].legal_moves_length;++i)

@@ -6,7 +6,7 @@
 #include "Board.h"
 #include "MoveType.h"
 #include "PieceType.h"
-#include "BoardRecord.h"
+#include "BoardState.h"
 #include "Utils.h"
 #include <random>
 

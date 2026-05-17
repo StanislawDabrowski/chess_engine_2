@@ -1,6 +1,6 @@
 #pragma once
 #include <cstdint>
-#include "BoardRecord.h"
+#include "BoardState.h"
 #include <string>
 
 class Board
