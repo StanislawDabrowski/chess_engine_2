@@ -1121,7 +1121,7 @@ void MoveGenerator::generate_noisy_pseudo_legal_moves()
 		size_t bishop_attacks = bishop_attack_tables[from][index];
 		index = (relevant_blockers_2 * rook_magic_numbers[from]) >> (64 - std::popcount(rook_relevant_blockers[from]));
 		size_t rook_attacks = rook_attack_tables[from][index];
-		attacks = (bishop_attacks | rook_attacks) & ~current_board_state->all_pieces_types[color] & (current_board_state->pieces[opp][Queen]);
+		attacks = (bishop_attacks | rook_attacks) & ~current_board_state->all_pieces_types[color] & (squares_from_which_king_can_be_checked[Queen]);
 		while (attacks)
 		{
 			to = std::countr_zero(attacks);
