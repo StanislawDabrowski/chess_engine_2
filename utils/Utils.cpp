@@ -339,6 +339,8 @@ namespace Utils
 	}
 	std::string move_to_string(Move move)
 	{
+		if (move==0)
+			return "0000";
 		std::string files = "abcdefgh";
 		std::string ranks = "12345678";
 		std::string move_str = "";
