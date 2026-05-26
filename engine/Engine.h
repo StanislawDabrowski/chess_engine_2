@@ -16,6 +16,8 @@ public:
 
 	static constexpr int16_t MAX_EVAL = 32767;
 	static constexpr int16_t MIN_EVAL = -32767;//needs to be -32767 so -MIN_EVAL is MAX_EVAL, not itself, which due to integer overflow would probably (it's UB), be the case
+	static constexpr uint8_t MAX_DEPTH = 255;//max depth for normal search (excludes qsearch, qsearch is unbounded)
+	static constexpr int16_t MATE_THRESHOLD = 30000;//assumes maximum depth of qsearch to be at maximum 2512
 
 	Engine();
 	Engine(const Engine&);
