@@ -197,7 +197,7 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 		}
 		board.unmake_move();
 	}
-	if (best_score > MATE_THRESHOLD)
+	if (std::abs(best_score) > MATE_THRESHOLD)
 	{
 		if (best_score > 0)
 			best_score -= 1;//to prefer faster wins
