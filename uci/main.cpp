@@ -494,6 +494,7 @@ int main()
 			continue;
 		}
 	}
+	engine_for_go_command.stop_search.store(true, std::memory_order_relaxed);
 	t.join();
 
 	
