@@ -276,7 +276,7 @@ void go_command_function(std::vector<std::string> args)
 			auto start_time = std::chrono::high_resolution_clock::now();
 			float effective_branching_factor_estimate = 1;
 			long previous_time_passed = -1;
-			for (uint8_t depth = 1;true && std::abs((engine.board.side_to_move == White ? Engine::MAX_EVAL : Engine::MIN_EVAL)-search_result.second)>=depth;++depth)
+			for (uint8_t depth = 1;std::abs(search_result.second)<=Engine::MATE_THRESHOLD;++depth)
 			{
 				engine_for_go_command.normal_search_nodes_searched = 0;
 				engine_for_go_command.quiescence_search_nodes_searched = 0;
