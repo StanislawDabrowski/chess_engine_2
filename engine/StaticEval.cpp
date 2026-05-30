@@ -4,9 +4,100 @@
 #include "Utils.h"
 
 
+
+bool StaticEval::static_members_initialized = false;
+Bitboard StaticEval::squares_1_in_front[2][64];
+Bitboard StaticEval::squares_2_in_front[2][64];
+
 StaticEval::StaticEval(Board* board, MoveGenerator* mg)
 	:board(board), mg(mg)
 { }
+
+void StaticEval::initialize_static_members()
+{
+	if (static_members_initialized)
+	{
+		return;
+	}
+	static_members_initialized = true;
+	Bitboard temp;
+	for (size_t i = 0; i < 64; ++i)
+	{
+		temp = 0;
+		if (i >= 56)
+		{
+			squares_1_in_front[White][i] = temp;
+			continue;
+		}
+		if (i % 8 != 0)
+		{
+			temp |= 1ULL << (i + 7);
+		}
+		if (i % 8 != 7)
+		{
+			temp |= 1ULL << (i + 9);
+		}
+		temp |= 1ULL << (i + 8);
+		squares_1_in_front[White][i] = temp;
+	}
+	for (size_t i = 0; i < 64; ++i)
+	{
+		temp = 0;
+		if (i < 8)
+		{
+			squares_1_in_front[Black][i] = temp;
+			continue;
+		}
+		if (i % 8 != 0)
+		{
+			temp |= 1ULL << (i - 9);
+		}
+		if (i % 8 != 7)
+		{
+			temp |= 1ULL << (i - 7);
+		}
+		temp |= 1ULL << (i - 8);
+		squares_1_in_front[Black][i] = temp;
+	}
+	for (size_t i = 0; i < 64; ++i)
+	{
+		temp = 0;
+		if (i >= 48)
+		{
+			squares_2_in_front[White][i] = temp;
+			continue;
+		}
+		if (i % 8 != 0)
+		{
+			temp |= 1ULL << (i + 15);
+		}
+		if (i % 8 != 7)
+		{
+			temp |= 1ULL << (i + 17);
+		}
+		temp |= 1ULL << (i + 16);
+		squares_2_in_front[White][i] = temp;
+	}
+	for (size_t i = 0; i < 64; ++i)
+	{
+		temp = 0;
+		if (i < 16)
+		{
+			squares_2_in_front[Black][i] = temp;
+			continue;
+		}
+		if (i % 8 != 0)
+		{
+			temp |= 1ULL << (i - 17);
+		}
+		if (i % 8 != 7)
+		{
+			temp |= 1ULL << (i - 15);
+		}
+		temp |= 1ULL << (i - 16);
+		squares_2_in_front[Black][i] = temp;
+	}
+}
 
 
 template<Color color>
@@ -119,6 +210,18 @@ int16_t StaticEval::evaluate_mobility()
 }
 
 template<Color color>
+int16_t StaticEval::evaluate_king_safety()
+{
+	int16_t score = 0;
+	uint8_t king_square = std::countr_zero(board->positions_stack[board->current_position_idx].pieces[color][King]);
+	Bitboard squares_of_intreset = squares_1_in_front[color][king_square];
+	score += std::popcount(squares_of_intreset & board->positions_stack[board->current_position_idx].pieces[color][Pawn]) * score_for_panws_1_in_front_of_king;
+	squares_of_intreset = squares_2_in_front[color][king_square];
+	score += std::popcount(squares_of_intreset & board->positions_stack[board->current_position_idx].pieces[color][Pawn]) * score_for_pawns_2_in_front_of_king;
+	return score;
+}
+
+template<Color color>
 int16_t StaticEval::evaluate()
 {
 	constexpr Color opp = color == White ? Black : White;
@@ -133,6 +236,8 @@ int16_t StaticEval::evaluate()
 
 	score += evaluate_mobility<color>();
 	score -= evaluate_mobility<opp>();
+	score += evaluate_king_safety<color>();
+	score -= evaluate_king_safety<opp>();
 	
 	return score;
 }
