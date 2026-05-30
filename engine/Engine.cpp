@@ -132,14 +132,7 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 				return eval;
 		}
 	}
-	if constexpr (root)
-	{
-		if (board.positions_stack[board.current_position_idx].legal_moves_length == 1)
-		{
-			//only 1 legal move so we just return that move
-			return std::pair<Move, int16_t>(board.positions_stack[board.current_position_idx].legal_moves[0], 0);
-		}
-	}
+	
 	
 	//move ordering
 	for (int i = 0;i<board.positions_stack[board.current_position_idx].legal_moves_length;++i)

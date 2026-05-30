@@ -248,6 +248,27 @@ void go_command_function(std::vector<std::string> args)
 		long time_passed = -1;
 		if (depth_max != -1)
 		{
+			if (engine_for_go_command.board.side_to_move == White)
+			{
+				engine_for_go_command.mg.generate_pseudo_legal_moves<White>();
+				engine_for_go_command.mg.filter_pseudo_legal_moves<White>();
+			}
+			else
+			{
+				engine_for_go_command.mg.generate_pseudo_legal_moves<Black>();
+				engine_for_go_command.mg.filter_pseudo_legal_moves<Black>();
+			}
+				if (engine_for_go_command.board.positions_stack[engine_for_go_command.board.current_position_idx].legal_moves_length == 1)
+			{
+				search_result.first = engine_for_go_command.board.positions_stack[engine_for_go_command.board.current_position_idx].legal_moves[0];
+				if (engine_for_go_command.board.side_to_move == White)
+					search_result.second = engine_for_go_command.se.evaluate<White>();
+				else
+					search_result.second = engine_for_go_command.se.evaluate<Black>();
+				out << "info depth 1 score cp " << search_result.second << " nodes 1 time 0" << std::endl;
+				out << "bestmove " << Utils::move_to_string(search_result.first) << std::endl;
+				return;
+			}
 			auto start_time = std::chrono::high_resolution_clock::now();
 			for (uint8_t depth = 1;depth<=depth_max && std::abs((engine.board.side_to_move == White ? Engine::MAX_EVAL : Engine::MIN_EVAL)-search_result.second)>=depth;++depth)
 			{
@@ -268,6 +289,26 @@ void go_command_function(std::vector<std::string> args)
 		}
 		else
 		{
+			if (engine_for_go_command.board.side_to_move == White)
+			{
+				engine_for_go_command.mg.generate_pseudo_legal_moves<White>();
+				engine_for_go_command.mg.filter_pseudo_legal_moves<White>();
+			}
+			else
+			{
+				engine_for_go_command.mg.generate_pseudo_legal_moves<Black>();
+				engine_for_go_command.mg.filter_pseudo_legal_moves<Black>();
+			}			if (engine_for_go_command.board.positions_stack[engine_for_go_command.board.current_position_idx].legal_moves_length == 1)
+			{
+				search_result.first = engine_for_go_command.board.positions_stack[engine_for_go_command.board.current_position_idx].legal_moves[0];
+				if (engine_for_go_command.board.side_to_move == White)
+					search_result.second = engine_for_go_command.se.evaluate<White>();
+				else
+					search_result.second = engine_for_go_command.se.evaluate<Black>();
+				out << "info depth 1 score cp " << search_result.second << " nodes 1 time 0" << std::endl;
+				out << "bestmove " << Utils::move_to_string(search_result.first) << std::endl;
+				return;
+			}
 			if (winc == -1)
 				winc = 0;
 			if (binc == -1)
