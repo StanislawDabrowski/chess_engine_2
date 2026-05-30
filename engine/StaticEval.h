@@ -18,7 +18,7 @@ public:
 	static Bitboard squares_1_in_front[2][64];//3 squares 1 rank above the king
 	static Bitboard squares_2_in_front[2][64];//3 squares 2 ranks above the king
 	StaticEval(Board* board, MoveGenerator* mg);
-	void initialize_static_members();
+	static void initialize_static_members();
 	template<Color color>
 	int16_t evaluate_mobility();
 	template<Color color>

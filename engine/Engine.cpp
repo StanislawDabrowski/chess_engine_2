@@ -6,6 +6,7 @@
 Engine::Engine()
 	:board(), mg(&board), se(&board, &mg)
 {
+	StaticEval::initialize_static_members();
 	normal_search_nodes_searched = 0;
 	quiescence_search_nodes_searched = 0;
 	stop_search.store(false, std::memory_order_relaxed);
