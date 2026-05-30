@@ -13,8 +13,8 @@ public:
 	static bool static_members_initialized;
 	static constexpr uint16_t piece_values[6] = { 100, 300, 300, 500, 900, 0 };//pawn knight bishop rook queen king
 	static constexpr int16_t mobility_score = 10;//score for each pseudo legal move
-	static constexpr int16_t score_for_panws_1_in_front_of_king = 30;
-	static constexpr int16_t score_for_pawns_2_in_front_of_king = 15;
+	static constexpr int16_t score_for_panws_1_in_front_of_king = 15;
+	static constexpr int16_t score_for_pawns_2_in_front_of_king = 7;
 	static Bitboard squares_1_in_front[2][64];//3 squares 1 rank above the king
 	static Bitboard squares_2_in_front[2][64];//3 squares 2 ranks above the king
 	StaticEval(Board* board, MoveGenerator* mg);
