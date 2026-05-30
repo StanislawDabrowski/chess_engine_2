@@ -14,7 +14,7 @@ namespace MoveOrdering
 		10,   //PawnDoublePush
 		200,  //PawnCapture
 		15,   //EnPassant
-		40,   //Castle
+		100,   //Castle
 		500,  //PromotionToQueen
 		-300, //PromotionToKnight
 		-300, //PromotionToRook
