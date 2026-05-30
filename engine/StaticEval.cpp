@@ -8,6 +8,7 @@
 bool StaticEval::static_members_initialized = false;
 Bitboard StaticEval::squares_1_in_front[2][64];
 Bitboard StaticEval::squares_2_in_front[2][64];
+Bitboard StaticEval::squares_next_to_king[2][64];
 
 StaticEval::StaticEval(Board* board, MoveGenerator* mg)
 	:board(board), mg(mg)
@@ -96,6 +97,20 @@ void StaticEval::initialize_static_members()
 		}
 		temp |= 1ULL << (i - 16);
 		squares_2_in_front[Black][i] = temp;
+	}
+	for (size_t i = 0; i < 64; ++i)
+	{
+		temp = 0;
+		if (i % 8 != 0)
+		{
+			temp |= 1ULL << (i - 1);
+		}
+		if (i % 8 != 7)
+		{
+			temp |= 1ULL << (i + 1);
+		}
+		squares_next_to_king[White][i] = temp;
+		squares_next_to_king[Black][i] = temp;
 	}
 }
 
@@ -218,6 +233,8 @@ int16_t StaticEval::evaluate_king_safety()
 	score += std::popcount(squares_of_intreset & board->positions_stack[board->current_position_idx].pieces[color][Pawn]) * score_for_panws_1_in_front_of_king;
 	squares_of_intreset = squares_2_in_front[color][king_square];
 	score += std::popcount(squares_of_intreset & board->positions_stack[board->current_position_idx].pieces[color][Pawn]) * score_for_pawns_2_in_front_of_king;
+	squares_of_intreset = squares_next_to_king[color][king_square];
+	score += std::popcount(squares_of_intreset & board->positions_stack[board->current_position_idx].pieces[color][Pawn]) * score_for_pawns_next_to_king;
 	return score;
 }
 

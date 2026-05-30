@@ -15,8 +15,10 @@ public:
 	static constexpr int16_t mobility_score = 10;//score for each pseudo legal move
 	static constexpr int16_t score_for_panws_1_in_front_of_king = 15;
 	static constexpr int16_t score_for_pawns_2_in_front_of_king = 10;
+	static constexpr int16_t score_for_pawns_next_to_king = 10;
 	static Bitboard squares_1_in_front[2][64];//3 squares 1 rank above the king
 	static Bitboard squares_2_in_front[2][64];//3 squares 2 ranks above the king
+	static Bitboard squares_next_to_king[2][64];//2 squares next to the king
 	StaticEval(Board* board, MoveGenerator* mg);
 	static void initialize_static_members();
 	template<Color color>
