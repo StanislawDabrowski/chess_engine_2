@@ -108,19 +108,19 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 
 	if (board.positions_stack[board.current_position_idx].legal_moves_length == 0)
 	{
-		if constexpr (!qsearch)
-		{
-			//checkmate or stalemate
-			int16_t eval;
-			if (mg.in_check<color>())
-				eval = MIN_EVAL;
+		//if not in qsearch it's checkmate or stalemate
+		int16_t eval;
+		if (mg.in_check<color>())
+			eval = MIN_EVAL;
+		else
+			if constexpr (qsearch)
+				eval = best_score;//stand pat i.e. static eval
 			else
 				eval = 0;
-			if constexpr (root)
-				return std::pair<Move, int16_t>(0, eval);
-			else
-				return eval;
-		}
+		if constexpr (root)
+			return std::pair<Move, int16_t>(0, eval);
+		else
+			return eval;
 	}
 	
 	
