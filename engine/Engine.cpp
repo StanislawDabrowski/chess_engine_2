@@ -87,19 +87,7 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 		else
 			return search<color, false, true, count_searched_nodes>(0, alpha, beta);
 	}
-	int16_t best_score;
-	if constexpr (qsearch)
-	{
-		best_score = se.evaluate<color>();
-		if (best_score >= beta)
-		{
-			return best_score;
-		}
-		if (best_score > alpha)
-		{
-			alpha = best_score;
-		}
-	}
+	
 	if constexpr (qsearch)
 		mg.generate_noisy_pseudo_legal_moves<color>();
 	else
@@ -114,7 +102,7 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 			eval = MIN_EVAL;
 		else
 			if constexpr (qsearch)
-				eval = best_score;//stand pat i.e. static eval
+				eval = se.evaluate<color>();
 			else
 				eval = 0;
 		if constexpr (root)
@@ -122,7 +110,23 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 		else
 			return eval;
 	}
-	
+	int16_t best_score;
+	if constexpr (qsearch)
+	{
+		if (!mg.checks)
+		{
+			best_score = se.evaluate<color>();
+			if (best_score >= beta)
+			{
+				return best_score;
+			}
+			if (best_score > alpha)
+			{
+				alpha = best_score;
+			}
+		}
+		best_score = MIN_EVAL - 1;
+	}
 	
 	//move ordering
 	for (int i = 0;i<board.positions_stack[board.current_position_idx].legal_moves_length;++i)
