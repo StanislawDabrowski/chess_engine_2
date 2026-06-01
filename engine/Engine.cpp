@@ -57,15 +57,12 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 {
 	if (depth >= 3)
 	{
-		if (depth >= 3)
+		if (stop_search.load(std::memory_order_relaxed))
 		{
-			if (stop_search.load(std::memory_order_relaxed))
-			{
-				if constexpr (root)
-					return std::pair<Move, int16_t>(0, 0);
-				else
-					return MAX_EVAL;//we return max eval so the parent node will not choose that node, since it's good for us it's bad for them
-			}
+			if constexpr (root)
+				return std::pair<Move, int16_t>(0, 0);
+			else
+				return MAX_EVAL;//we return max eval so the parent node will not choose that node, since it's good for us it's bad for them
 		}
 	}
 	if constexpr (count_searched_nodes)
