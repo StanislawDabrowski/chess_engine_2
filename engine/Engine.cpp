@@ -110,7 +110,7 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 	{
 		//if not in qsearch it's checkmate or stalemate
 		int16_t eval;
-		if (mg.in_check<color>())
+		if (mg.checks)//checks is set in filter_pseudo_legal_moves so it can be used here
 			eval = MIN_EVAL;
 		else
 			if constexpr (qsearch)
