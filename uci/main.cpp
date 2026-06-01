@@ -239,9 +239,22 @@ void go_command_function(std::vector<std::string> args)
 				}
 			}
 		}
-		if (depth_max == -1 && (wtime == -1 || btime == -1))//neither depth nor time control specified
+		if (depth_max == -1)
 		{
-			return;
+			if (engine.board.side_to_move == White)
+			{
+				if (wtime == -1)
+				{
+					return;
+				}
+			}
+			else
+			{
+				if (btime == -1)
+				{
+					return;
+				}
+			}
 		}
 		std::pair<Move, int16_t> search_result = std::make_pair(0, 0);
 		std::pair<Move, int16_t> search_result_temp;
