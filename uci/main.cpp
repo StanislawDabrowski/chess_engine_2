@@ -78,6 +78,28 @@ void debug_command_function(std::vector<std::string> args)
 }
 
 
+std::string get_score_string(int16_t score)
+{
+	std::string score_string;
+	if (score > Engine::MATE_THRESHOLD || score < -Engine::MATE_THRESHOLD)
+	{
+		if (score > 0)
+		{
+			int mate_in_ply = Engine::MAX_EVAL - score;
+			return "mate " + std::to_string((mate_in_ply+1)/2);
+		}
+		else
+		{
+			int mate_in_ply = Engine::MIN_EVAL - score;
+			return "mate " + std::to_string((mate_in_ply)/2);//no need to adjust with +1 or -1 since if we are getting mated we make the first move but the opponent makes the last move so the ply is even
+		}
+	}
+	else
+	{
+		return "cp " + std::to_string(score);
+	}
+}
+
 void go_command_function(std::vector<std::string> args)
 {
 	HandleGoCommandExit handle_go_command_exit;
@@ -297,7 +319,8 @@ void go_command_function(std::vector<std::string> args)
 					search_result = search_result_temp;
 
 				time_passed = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
-				out << "info depth " << static_cast<int>(depth) << " score cp " << search_result.second << " nodes " << engine_for_go_command.normal_search_nodes_searched+engine_for_go_command.quiescence_search_nodes_searched << " nps " << (time_passed > 0 ? (engine_for_go_command.normal_search_nodes_searched+engine_for_go_command.quiescence_search_nodes_searched) * 1'000'000 / time_passed : 0) << " time " << static_cast<int>(std::round((static_cast<float>(time_passed)/1000.0))) << std::endl;
+				std::string score_string = get_score_string(search_result.second);
+				out << "info depth " << static_cast<int>(depth) << " score " << score_string << " nodes " << engine_for_go_command.normal_search_nodes_searched+engine_for_go_command.quiescence_search_nodes_searched << " nps " << (time_passed > 0 ? (engine_for_go_command.normal_search_nodes_searched+engine_for_go_command.quiescence_search_nodes_searched) * 1'000'000 / time_passed : 0) << " time " << static_cast<int>(std::round((static_cast<float>(time_passed)/1000.0))) << std::endl;
 			}
 		}
 		else
@@ -311,14 +334,15 @@ void go_command_function(std::vector<std::string> args)
 			{
 				engine_for_go_command.mg.generate_pseudo_legal_moves<Black>();
 				engine_for_go_command.mg.filter_pseudo_legal_moves<Black>();
-			}			if (engine_for_go_command.board.positions_stack[engine_for_go_command.board.current_position_idx].legal_moves_length == 1)
+			}
+			if (engine_for_go_command.board.positions_stack[engine_for_go_command.board.current_position_idx].legal_moves_length == 1)
 			{
 				search_result.first = engine_for_go_command.board.positions_stack[engine_for_go_command.board.current_position_idx].legal_moves[0];
 				if (engine_for_go_command.board.side_to_move == White)
 					search_result.second = engine_for_go_command.se.evaluate<White>();
 				else
 					search_result.second = engine_for_go_command.se.evaluate<Black>();
-				out << "info depth 1 score cp " << search_result.second << " nodes 1 time 0" << std::endl;
+				out << "info depth 1 " << "score cp " << search_result.second << " nodes 1 time 0" << std::endl;
 				out << "bestmove " << Utils::move_to_string(search_result.first) << std::endl;
 				return;
 			}
@@ -348,7 +372,8 @@ void go_command_function(std::vector<std::string> args)
 				{
 					effective_branching_factor_estimate = time_passed/static_cast<float>(previous_time_passed);
 				}
-				out << "info depth " << static_cast<int>(depth) << " score cp " << search_result.second << " nodes " << engine_for_go_command.normal_search_nodes_searched+engine_for_go_command.quiescence_search_nodes_searched << " nps " << (time_passed > 0 ? (engine_for_go_command.normal_search_nodes_searched+engine_for_go_command.quiescence_search_nodes_searched) * 1'000'000 / time_passed : 0) << " time " << static_cast<int>(std::round((static_cast<float>(time_passed)/1000.0))) << std::endl;
+				std::string score_string = get_score_string(search_result.second);
+				out << "info depth " << static_cast<int>(depth) << " score " << score_string << " nodes " << engine_for_go_command.normal_search_nodes_searched+engine_for_go_command.quiescence_search_nodes_searched << " nps " << (time_passed > 0 ? (engine_for_go_command.normal_search_nodes_searched+engine_for_go_command.quiescence_search_nodes_searched) * 1'000'000 / time_passed : 0) << " time " << static_cast<int>(std::round((static_cast<float>(time_passed)/1000.0))) << std::endl;
 				long estimated_time_for_next_depth = time_passed * effective_branching_factor_estimate;
 				if (estimated_time_for_next_depth * 1.2 > time_to_think * 1000)//*1000 is neccessary we measure time in microseconds but time_to_think is in milliseconds
 					break;
