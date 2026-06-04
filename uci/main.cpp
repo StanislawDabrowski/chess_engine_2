@@ -29,6 +29,12 @@ public:
 };
 
 
+void update_engine_for_go_command()
+{
+	engine_for_go_command.board = engine.board;
+}
+
+
 void do_nothing_command_function(std::vector<std::string> args)
 {
 	//does nothing, for command which for now don't need any implementation, like e.g. ucinewgame
@@ -562,7 +568,7 @@ int main()
 			{
 				if (t.joinable())
 					t.join();
-				engine_for_go_command = Engine(engine);
+				update_engine_for_go_command();
 				go_command_is_running.store(true, std::memory_order_seq_cst);
 				t = std::thread(commands_functions[tokens[0]], std::vector<std::string>(tokens.begin()+1, tokens.end()));
 			}
