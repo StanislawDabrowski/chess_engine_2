@@ -24,7 +24,7 @@ public:
 	~HandleGoCommandExit()
 	{
 		go_command_is_running.store(false, std::memory_order_release);
-		engine.stop_search.store(false, std::memory_order_release);
+		engine_for_go_command.stop_search.store(false, std::memory_order_release);
 	}
 };
 
