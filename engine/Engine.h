@@ -3,6 +3,7 @@
 #include "MoveGenerator.h"
 #include "StaticEval.h"
 #include <atomic>
+#include <chrono>
 
 
 class Engine
@@ -14,6 +15,7 @@ public:
 	std::atomic<bool> stop_search;
 	uint64_t normal_search_nodes_searched;
 	uint64_t quiescence_search_nodes_searched;
+	std::chrono::time_point<std::chrono::high_resolution_clock> search_time_hard_bound;
 
 	static constexpr int16_t MAX_EVAL = 32767;
 	static constexpr int16_t MIN_EVAL = -32767;//needs to be -32767 so -MIN_EVAL is MAX_EVAL, not itself, which due to integer overflow would probably (it's UB), be the case
