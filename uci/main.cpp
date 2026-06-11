@@ -370,7 +370,7 @@ void go_command_function(std::vector<std::string> args)
 					search_result_temp = engine_for_go_command.search<White, true, false, true>(depth);
 				else
 					search_result_temp = engine_for_go_command.search<Black, true, false, true>(depth);
-				if (engine_for_go_command.stop_search.load(std::memory_order_relaxed))
+				if (engine_for_go_command.stop_search.load(std::memory_order_relaxed) || std::chrono::high_resolution_clock::now() >= engine_for_go_command.search_time_hard_bound)
 					break;
 				else
 					search_result = search_result_temp;
