@@ -10,7 +10,7 @@ std::pair<uint64_t, uint64_t> get_time_to_think_in_ms(Engine* engine, uint64_t w
 	uint64_t inc = engine->board.side_to_move==White ? winc : binc;
 
 	uint64_t lower_bound = time_left / movestogo + inc;
-	uint64_t upper_bound = lower_bound * 4;
+	uint64_t upper_bound = lower_bound * 2;
 	if (lower_bound > time_left)
 		lower_bound = time_left * 0.95;
 	if (upper_bound > time_left)
