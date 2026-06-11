@@ -371,7 +371,11 @@ void go_command_function(std::vector<std::string> args)
 				else
 					search_result_temp = engine_for_go_command.search<Black, true, false, true>(depth);
 				if (engine_for_go_command.stop_search.load(std::memory_order_relaxed) || std::chrono::high_resolution_clock::now() >= engine_for_go_command.search_time_hard_bound)
+				{
+					if (search_result.first == 0)
+						search_result = search_result_temp;
 					break;
+				}
 				else
 					search_result = search_result_temp;
 				previous_time_passed = time_passed;
