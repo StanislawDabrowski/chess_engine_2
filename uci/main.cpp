@@ -51,8 +51,8 @@ void set_hash(std::string val)
 			return;
 		}
 		uint64_t hash_size_in_bytes = hash_size_in_mb * 1024 * 1024;
-		engine.TT_size = hash_size_in_bytes / sizeof(TTEntry);
-		update_engine_for_go_command();
+		engine_for_go_command.TT_size = hash_size_in_bytes / sizeof(TTEntry);
+		engine_for_go_command.update_TT_size();
 	}
 	catch (...)
 	{
@@ -630,6 +630,7 @@ int main()
 		{"uci", uci_command_function},
 		{"debug", debug_command_function},
 		{"ucinewgame", do_nothing_command_function},
+		{"setoption", setoption_command_function},
 		//non uci commands
 		{"fen", fen_command_function},
 		{"hash", hash_command_function},
