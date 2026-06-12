@@ -6,7 +6,7 @@ struct BoardState
 {
 	static constexpr int maximum_number_of_legal_moves = 255;
 	Move legal_moves[maximum_number_of_legal_moves];
-	uint16_t move_ordering_scores[maximum_number_of_legal_moves];
+	int16_t move_ordering_scores[maximum_number_of_legal_moves];
 	Bitboard pieces[2][6]; // [color][piece_type]
 	Bitboard all_pieces_types[2];//all pieces of a specified color
 	Bitboard all_pieces;
