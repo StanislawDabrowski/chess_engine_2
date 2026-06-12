@@ -4,7 +4,6 @@
 
 struct TTEntry
 {
-	uint64_t hash;
 	Move best_move;
-	TTEntry() :hash(0), best_move(0) { }
+	TTEntry() :best_move(0) { }
 };

@@ -226,7 +226,6 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 	//store in TT
 	if (depth != 0)
 	{
-		tt_entry->hash = board.positions_stack[board.current_position_idx].hash;
 		tt_entry->best_move = best_move;
 	}
 	if constexpr (root)

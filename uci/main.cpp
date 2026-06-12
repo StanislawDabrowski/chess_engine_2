@@ -74,7 +74,7 @@ void ucinewgame_command_function(std::vector<std::string> args)
 	//clear TT
 	for (size_t i = 0;i < engine_for_go_command.TT_size;++i)
 	{
-		engine_for_go_command.TT[i].hash = 0;//setting hash to 0 is not necessary but it's done to lower the number of "TT hits" which are not actually hits but just reseted entries. hash is set to some value which is likely not to appear a lot
+		engine_for_go_command.TT[i].best_move = 0;//set to illegal moves so it's never used
 	}
 }
 
@@ -629,7 +629,7 @@ int main()
 		{"isready", isready_command_function},
 		{"uci", uci_command_function},
 		{"debug", debug_command_function},
-		{"ucinewgame", do_nothing_command_function},
+		{"ucinewgame", ucinewgame_command_function},
 		{"setoption", setoption_command_function},
 		//non uci commands
 		{"fen", fen_command_function},
