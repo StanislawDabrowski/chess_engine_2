@@ -131,6 +131,7 @@ void uci_command_function(std::vector<std::string> args)
 {
 	std::cout << "id name ChessEngine2" << std::endl;
 	std::cout << "id author Avalfortz" << std::endl;
+	std::cout << "option name Hash type spin default " << default_hash_size_in_mb << " min " << min_hash_size_in_mb << " max " << max_hash_size_in_mb << std::endl;
 	std::cout << "uciok" << std::endl;
 }
 
