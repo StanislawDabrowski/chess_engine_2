@@ -35,9 +35,86 @@ void update_engine_for_go_command()
 }
 
 
+static constexpr uint64_t min_hash_size_in_mb = 1;
+static constexpr uint64_t max_hash_size_in_mb = 18446744073709551615ULL;//2^64-1
+static constexpr uint64_t default_hash_size_in_mb = Engine::DEFAULT_TT_SIZE * sizeof(TTEntry) / (1024 * 1024);
+
+void set_hash(std::string val)
+{
+	//we don't call update_TT_size on object engine, we only call it on engine_for_go_command so the engine object doesn't wase memory
+	try
+	{
+		uint64_t hash_size_in_mb = std::stoull(val);
+		//check if within bounds
+		if (hash_size_in_mb < min_hash_size_in_mb || hash_size_in_mb > max_hash_size_in_mb)
+		{
+			return;
+		}
+		uint64_t hash_size_in_bytes = hash_size_in_mb * 1024 * 1024;
+		engine.TT_size = hash_size_in_bytes / sizeof(TTEntry);
+		update_engine_for_go_command();
+	}
+	catch (...)
+	{
+		return;
+	}
+}
+
+static std::unordered_map<std::string, std::function<void(std::string)>> option_setters = {
+	{"Hash", set_hash},
+};
+
 void do_nothing_command_function(std::vector<std::string> args)
 {
 	//does nothing, for command which for now don't need any implementation, like e.g. ucinewgame
+}
+
+void ucinewgame_command_function(std::vector<std::string> args)
+{
+	//clear TT
+	for (size_t i = 0;i < engine_for_go_command.TT_size;++i)
+	{
+		engine_for_go_command.TT[i].hash = 0;//setting hash to 0 is not necessary but it's done to lower the number of "TT hits" which are not actually hits but just reseted entries. hash is set to some value which is likely not to appear a lot
+	}
+}
+
+void setoption_command_function(std::vector<std::string> args)
+{
+	std::string name;
+	std::string value;
+	for (int i = 0;i<args.size();++i)
+	{
+		if (args[i]=="name")
+		{
+			++i;
+			if (i<args.size())
+				name = args[i];
+			else
+			{
+				std::cout << "No name specified after 'name'" << std::endl;
+				return;
+			}
+		}
+		else if (args[i]=="value")
+		{
+			++i;
+			if (i<args.size())
+				value = args[i];
+			else
+			{
+				std::cout << "No value specified after 'value'" << std::endl;
+				return;
+			}
+		}
+	}
+	if (option_setters.contains(name))
+	{
+		option_setters[name](value);
+	}
+	else
+	{
+		std::cout << "Unknown option name: " << name << std::endl;
+	}
 }
 
 void d_command_function(std::vector<std::string> args)
@@ -316,6 +393,8 @@ void go_command_function(std::vector<std::string> args)
 			{
 				engine_for_go_command.normal_search_nodes_searched = 0;
 				engine_for_go_command.quiescence_search_nodes_searched = 0;
+				engine_for_go_command.TT_hits = 0;
+				engine_for_go_command.TT_writes = 0;
 				if (engine_for_go_command.board.side_to_move == White)
 					search_result_temp = engine_for_go_command.search<White, true, false, true>(depth);
 				else
@@ -327,7 +406,14 @@ void go_command_function(std::vector<std::string> args)
 
 				time_passed = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
 				std::string score_string = get_score_string(search_result.second);
-				out << "info depth " << static_cast<int>(depth) << " score " << score_string << " nodes " << engine_for_go_command.normal_search_nodes_searched+engine_for_go_command.quiescence_search_nodes_searched << " nps " << (time_passed > 0 ? (engine_for_go_command.normal_search_nodes_searched+engine_for_go_command.quiescence_search_nodes_searched) * 1'000'000 / time_passed : 0) << " time " << static_cast<int>(std::round((static_cast<float>(time_passed)/1000.0))) << std::endl;
+				out << "info depth " << static_cast<int>(depth);
+				out << " score ";
+				out << score_string;
+				out << " nodes " << engine_for_go_command.normal_search_nodes_searched+engine_for_go_command.quiescence_search_nodes_searched;
+				out << " nps " << (time_passed > 0 ? (engine_for_go_command.normal_search_nodes_searched+engine_for_go_command.quiescence_search_nodes_searched) * 1'000'000 / time_passed : 0);
+				out << " tt hits " << engine_for_go_command.TT_hits;
+				out << " tt writes " << engine_for_go_command.TT_writes;
+				out << " time " << static_cast<int>(std::round((static_cast<float>(time_passed)/1000.0))) << std::endl;
 			}
 		}
 		else
@@ -366,6 +452,8 @@ void go_command_function(std::vector<std::string> args)
 			{
 				engine_for_go_command.normal_search_nodes_searched = 0;
 				engine_for_go_command.quiescence_search_nodes_searched = 0;
+				engine_for_go_command.TT_hits = 0;
+				engine_for_go_command.TT_writes = 0;
 				if (engine_for_go_command.board.side_to_move == White)
 					search_result_temp = engine_for_go_command.search<White, true, false, true>(depth);
 				else

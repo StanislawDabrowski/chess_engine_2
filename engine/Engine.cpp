@@ -7,14 +7,28 @@ Engine::Engine()
 	:board(), mg(&board), se(&board, &mg)
 {
 	StaticEval::initialize_static_members();
+	TT_size = DEFAULT_TT_SIZE;
+	update_TT_size();
 	normal_search_nodes_searched = 0;
 	quiescence_search_nodes_searched = 0;
+	TT_hits = 0;
+	TT_writes = 0;
 	stop_search.store(false, std::memory_order_relaxed);
 }
 
 Engine::Engine(const Engine& other)
-	:board(other.board), mg(&board), se(&board, &mg), normal_search_nodes_searched(other.normal_search_nodes_searched), quiescence_search_nodes_searched(other.quiescence_search_nodes_searched), stop_search(false)
-{ }
+	:board(other.board),
+	mg(&board),
+	se(&board, &mg),
+	normal_search_nodes_searched(other.normal_search_nodes_searched),
+	quiescence_search_nodes_searched(other.quiescence_search_nodes_searched),
+	TT_hits(0),
+	TT_writes(0),
+	TT_size(other.TT_size),
+	stop_search(false)
+{
+	update_TT_size();
+}
 
 Engine& Engine::operator=(const Engine& other)
 {
@@ -23,8 +37,17 @@ Engine& Engine::operator=(const Engine& other)
 	se = StaticEval(&board, &mg);
 	normal_search_nodes_searched = other.normal_search_nodes_searched;
 	quiescence_search_nodes_searched = other.quiescence_search_nodes_searched;
+	TT_hits = 0;
+	TT_writes = 0;
+	TT_size = other.TT_size;
+	update_TT_size();
 	stop_search.store(false, std::memory_order_relaxed);
 	return *this;
+}
+
+void Engine::update_TT_size()
+{
+	TT.resize(TT_size);
 }
 
 template<Color color>
@@ -134,24 +157,30 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 			}
 		}
 	}
+
+	Move tt_move = 0;
+	TTEntry *tt_entry = &TT[board.positions_stack[board.current_position_idx].hash%TT_size];
 	
 	//move ordering
 	for (int i = 0;i<board.positions_stack[board.current_position_idx].legal_moves_length;++i)
 	{
+		if (tt_entry->best_move == board.positions_stack[board.current_position_idx].legal_moves[i])
+		{
+			board.positions_stack[board.current_position_idx].move_ordering_scores[i] = 32767;
+			continue;
+		}
 		if (mg.checks)
 		{
 			board.positions_stack[board.current_position_idx].move_ordering_scores[i] = MoveOrdering::MoveType_score_in_check[board.positions_stack[board.current_position_idx].legal_moves[i] >> 12];
+			continue;
+		}
+		if constexpr (qsearch)
+		{
+			board.positions_stack[board.current_position_idx].move_ordering_scores[i] = MoveOrdering::MoveType_score_qsearch_no_check[board.positions_stack[board.current_position_idx].legal_moves[i] >> 12];
 		}
 		else
 		{
-			if constexpr (qsearch)
-			{
-				board.positions_stack[board.current_position_idx].move_ordering_scores[i] = MoveOrdering::MoveType_score_qsearch_no_check[board.positions_stack[board.current_position_idx].legal_moves[i] >> 12];
-			}
-			else
-			{
-				board.positions_stack[board.current_position_idx].move_ordering_scores[i] = MoveOrdering::MoveType_score_no_check[board.positions_stack[board.current_position_idx].legal_moves[i] >> 12];
-			}
+			board.positions_stack[board.current_position_idx].move_ordering_scores[i] = MoveOrdering::MoveType_score_no_check[board.positions_stack[board.current_position_idx].legal_moves[i] >> 12];
 		}
 	}
 	//sort moves with insertion sort
@@ -174,8 +203,7 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 		if (score > best_score)
 		{
 			best_score = score;
-			if constexpr (root)
-				best_move = board.positions_stack[board.current_position_idx-1].legal_moves[i];
+			best_move = board.positions_stack[board.current_position_idx-1].legal_moves[i];
 			if (best_score > alpha)
 			{
 				alpha = best_score;
@@ -194,6 +222,12 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 			best_score -= 1;//to prefer faster wins
 		else if (best_score < 0)
 			best_score += 1;//to prefer slower losses
+	}
+	//store in TT
+	if (depth != 0)
+	{
+		tt_entry->hash = board.positions_stack[board.current_position_idx].hash;
+		tt_entry->best_move = best_move;
 	}
 	if constexpr (root)
 		return std::pair<Move, int16_t>(best_move, best_score);
