@@ -64,11 +64,6 @@ static std::unordered_map<std::string, std::function<void(std::string)>> option_
 	{"Hash", set_hash},
 };
 
-void do_nothing_command_function(std::vector<std::string> args)
-{
-	//does nothing, for command which for now don't need any implementation, like e.g. ucinewgame
-}
-
 void ucinewgame_command_function(std::vector<std::string> args)
 {
 	//clear TT
