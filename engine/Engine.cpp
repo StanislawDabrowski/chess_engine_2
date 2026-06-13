@@ -166,6 +166,7 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 	{
 		if (tt_entry->best_move == board.positions_stack[board.current_position_idx].legal_moves[i])
 		{
+			++TT_hits;
 			board.positions_stack[board.current_position_idx].move_ordering_scores[i] = 32767;
 			continue;
 		}
@@ -227,6 +228,7 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 	if (depth != 0)
 	{
 		tt_entry->best_move = best_move;
+		++TT_writes;
 	}
 	if constexpr (root)
 		return std::pair<Move, int16_t>(best_move, best_score);

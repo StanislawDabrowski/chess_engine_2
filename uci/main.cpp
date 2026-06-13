@@ -407,8 +407,8 @@ void go_command_function(std::vector<std::string> args)
 				out << score_string;
 				out << " nodes " << engine_for_go_command.normal_search_nodes_searched+engine_for_go_command.quiescence_search_nodes_searched;
 				out << " nps " << (time_passed > 0 ? (engine_for_go_command.normal_search_nodes_searched+engine_for_go_command.quiescence_search_nodes_searched) * 1'000'000 / time_passed : 0);
-				out << " tt hits " << engine_for_go_command.TT_hits;
-				out << " tt writes " << engine_for_go_command.TT_writes;
+				out << " tthits " << engine_for_go_command.TT_hits;
+				out << " ttwrites " << engine_for_go_command.TT_writes;
 				out << " time " << static_cast<int>(std::round((static_cast<float>(time_passed)/1000.0))) << std::endl;
 			}
 		}
@@ -468,7 +468,13 @@ void go_command_function(std::vector<std::string> args)
 					effective_branching_factor_estimate = time_passed/static_cast<float>(previous_time_passed);
 				}
 				std::string score_string = get_score_string(search_result.second);
-				out << "info depth " << static_cast<int>(depth) << " score " << score_string << " nodes " << engine_for_go_command.normal_search_nodes_searched+engine_for_go_command.quiescence_search_nodes_searched << " nps " << (time_passed > 0 ? (engine_for_go_command.normal_search_nodes_searched+engine_for_go_command.quiescence_search_nodes_searched) * 1'000'000 / time_passed : 0) << " time " << static_cast<int>(std::round((static_cast<float>(time_passed)/1000.0))) << std::endl;
+				out << "info depth " << static_cast<int>(depth);
+				out << " score " << score_string;
+				out << " nodes " << engine_for_go_command.normal_search_nodes_searched+engine_for_go_command.quiescence_search_nodes_searched;
+				out << " nps " << (time_passed > 0 ? (engine_for_go_command.normal_search_nodes_searched+engine_for_go_command.quiescence_search_nodes_searched) * 1'000'000 / time_passed : 0);
+				out << " tthits " << engine_for_go_command.TT_hits;
+				out << " ttwrites " << engine_for_go_command.TT_writes;
+				out << " time " << static_cast<int>(std::round((static_cast<float>(time_passed)/1000.0))) << std::endl;
 				long estimated_time_for_next_depth = time_passed * effective_branching_factor_estimate;
 				if (estimated_time_for_next_depth * 1.2 > time_to_think.first * 1000)//*1000 is neccessary we measure time in microseconds but time_to_think is in milliseconds
 					break;
