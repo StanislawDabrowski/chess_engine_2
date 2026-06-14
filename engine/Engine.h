@@ -2,7 +2,7 @@
 #include "Board.h"
 #include "MoveGenerator.h"
 #include "StaticEval.h"
-#include "TTentry.h"
+#include "TTEntry.h"
 #include <atomic>
 #include <chrono>
 
