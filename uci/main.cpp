@@ -70,6 +70,10 @@ void ucinewgame_command_function(std::vector<std::string> args)
 	for (size_t i = 0;i < engine_for_go_command.TT_size;++i)
 	{
 		engine_for_go_command.TT[i].best_move = 0;//set to illegal moves so it's never used
+		engine_for_go_command.TT[i].hash = 0;//hash which is less likely to occur than a hash which actually occured in some game
+		engine_for_go_command.TT[i].eval = Engine::MIN_EVAL;//min eval so with eval type being lower bound leads to entry being never used for eval
+		engine_for_go_command.TT[i].eval_type = TTEvalType::LowerBound;
+		engine_for_go_command.TT[i].depth = 0;//set to 0 to minimise usage
 	}
 }
 
