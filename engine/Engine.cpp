@@ -119,6 +119,7 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 			return search<color, false, true, count_searched_nodes>(0, alpha, beta);
 	}
 	
+	int16_t best_score = MIN_EVAL - 1;
 	TTEntry *tt_entry = &TT[board.positions_stack[board.current_position_idx].hash%TT_size];
 	if (tt_entry->hash == board.positions_stack[board.current_position_idx].hash && tt_entry->depth >= depth)
 	{
@@ -131,7 +132,8 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 				return tt_entry->eval;
 			break;
 		case TTEvalType::LowerBound:
-			alpha = std::max(alpha, tt_entry->eval);
+			best_score = tt_entry->eval;
+			alpha = std::max(alpha, best_score);
 			break;
 		case TTEvalType::UpperBound:
 			beta = std::min(beta, tt_entry->eval);
@@ -141,8 +143,7 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 		{
 			if constexpr (root)
 			{
-				if (tt_entry->eval_type == TTEvalType::Exact)
-					return std::make_pair(tt_entry->best_move, tt_entry->eval);
+				;//eval type is never exact if we are here and we don't want to return in root if we don't have the actaully best move
 			}
 			else
 				return tt_entry->eval;
@@ -172,7 +173,6 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 		else
 			return eval;
 	}
-	int16_t best_score = MIN_EVAL - 1;
 	if constexpr (qsearch)
 	{
 		if (!mg.checks)
@@ -225,7 +225,7 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 			--j;
 		}
 	}
-	Move best_move;	
+	Move best_move = 0;	
 	for (int i = 0;i<board.positions_stack[board.current_position_idx].legal_moves_length;++i)
 	{
 		board.make_move(board.positions_stack[board.current_position_idx].legal_moves[i]);
@@ -256,6 +256,9 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 		else if (best_score < 0)
 			best_score += 1;//to prefer slower losses
 	}
+	if (best_move == 0)//no move better then the evaluation from the TT was found (eval type must have been lower bound)
+		best_move = tt_entry->best_move;
+
 	//store in TT
 	if constexpr (!qsearch)
 	{
