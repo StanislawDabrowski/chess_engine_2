@@ -10,4 +10,5 @@ struct TTEntry
 	int16_t eval;
 	uint8_t depth;
 	TTEvalType eval_type;
+	TTEntry();
 };
