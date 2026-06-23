@@ -1,6 +1,6 @@
 configure_file(
-	${CMAKE_CURRENT_SOURCE_DIR}/ethereal_fen_set.fen
-	${CMAKE_CURRENT_BINARY_DIR}/ethereal_fen_set.fen
+	${CMAKE_CURRENT_SOURCE_DIR}/ethereal_fen_set_perft_results_depth_5.txt
+	${CMAKE_CURRENT_BINARY_DIR}/ethereal_fen_set_perft_results_depth_5.txt
 	COPYONLY)
 configure_file(
 	${CMAKE_CURRENT_SOURCE_DIR}/draw_by_repetition_test_cases.txt

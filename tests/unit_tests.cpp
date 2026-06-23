@@ -42,7 +42,7 @@ void run_all_tests(bool terminate_on_failure_arg)
 {
 	terminate_on_failure = terminate_on_failure_arg;
 	MoveGeneratorTests::in_check_test();
-	BoardTests::zobrist_hashing_test(get_executable_file_directory_path() + "/ethereal_fen_set.fen");
+	BoardTests::zobrist_hashing_test(get_executable_file_directory_path() + "/ethereal_fen_set_perft_results_depth_5.txt");
 	BoardTests::repetition_detection_test(get_executable_file_directory_path() + "/draw_by_repetition_test_cases.txt");
 }
 
@@ -165,34 +165,103 @@ namespace hash_tests
 
 	}
 
-	void test_zobrist_hashing_on_fen_with_perft(std::string fen, uint8_t depth)
+	struct PerftTTEntry
+	{
+		uint64_t hash;
+		uint64_t result;
+		uint8_t depth;
+		PerftTTEntry() : hash(0), result(1), depth(0) { }
+	};
+	static uint64_t TT_hits_in_perft;
+	template<Color color>
+	uint64_t perft_with_TT(Board* board, MoveGenerator* mg, std::vector<PerftTTEntry>* TT, size_t TT_size, uint8_t depth)
+	{
+		mg->generate_pseudo_legal_moves<color>();
+		mg->filter_pseudo_legal_moves<color>();
+		PerftTTEntry* tt_entry = &((*TT)[board->positions_stack[board->current_position_idx].hash % TT_size]);
+		if (tt_entry->hash == board->positions_stack[board->current_position_idx].hash && tt_entry->depth == depth)
+		{
+			++TT_hits_in_perft;
+			return tt_entry->result;
+		}
+		uint64_t result = 0;
+		if (depth == 1)
+			result = board->positions_stack[board->current_position_idx].legal_moves_length;
+		else for (size_t i = 0;i < board->positions_stack[board->current_position_idx].legal_moves_length;++i)
+		{
+			board->make_move(board->positions_stack[board->current_position_idx].legal_moves[i]);
+			result += perft_with_TT<color == White ? Black : White>(board, mg, TT, TT_size, depth-1);
+			board->unmake_move();
+		}
+		tt_entry->hash = board->positions_stack[board->current_position_idx].hash;
+		tt_entry->depth = depth;
+		tt_entry->result = result;
+		
+		return result;
+
+	}
+	void test_perft_with_TT_results(Board* board, MoveGenerator* mg, std::vector<PerftTTEntry>* TT, size_t TT_size, uint8_t depth, uint64_t expected_result)
+	{
+		uint64_t result;
+		if (board->side_to_move == White)
+			result = perft_with_TT<White>(board, mg, TT, TT_size, depth);
+		else
+			result = perft_with_TT<Black>(board, mg, TT, TT_size, depth);
+		if (result != expected_result)
+		{
+			std::cout << "Perft result of perft with TT did not much the true value in position: " << Utils::get_fen(board) << " expected result: " << expected_result << " got: " << result << std::endl;
+			if (terminate_on_failure)
+				exit(1);
+		}
+		if (TT_hits_in_perft == 0)
+		{
+			std::cout << "Perft with TT had no TT hits in position: " << Utils::get_fen(board) << " expected result: " << expected_result << " got: " << result << std::endl;
+		}
+		TT_hits_in_perft = 0;
+	}
+
+
+	void test_zobrist_hashing_on_fen_with_perft(std::string fen, uint8_t depth, uint16_t TT_size_in_MB, uint64_t expected_perft_result)
 	{
 		Board board = Board();
 		board.load_fen(fen);
 		board.calculate_hash();
 		MoveGenerator move_generator(&board);
+		std::vector<PerftTTEntry> TT;
+		size_t TT_size = (TT_size_in_MB*1024*1024)/(sizeof(PerftTTEntry));
+		TT.resize(TT_size);
 
 		perft_with_hash_testing(&board, &move_generator, depth);
+		test_perft_with_TT_results(&board, &move_generator, &TT, TT_size, depth, expected_perft_result);
+		
 	}
 }
 
 
-void BoardTests::zobrist_hashing_test(std::string file_with_fens)
+void BoardTests::zobrist_hashing_test(std::string file_with_fens_and_perft_results_for_specified_depth)
 {
-	constexpr uint8_t depth = 4;
+	constexpr size_t TT_size_in_MB = 16;
 	bool any_test_failed = false;
-	std::ifstream file(file_with_fens);
+	std::ifstream file(file_with_fens_and_perft_results_for_specified_depth);
 	if (!file.is_open())
 	{
-		std::cerr << "Failed to open file: " << file_with_fens << std::endl;
+		std::cerr << "Failed to open file: " << file_with_fens_and_perft_results_for_specified_depth << std::endl;
 		any_test_failed = true;
 		return;
 	}
 	std::string line;
+	std::string fen;
+	std::string depth_str;
+	std::string perft_result;
 	int line_number = 0;
+	char delimeter = ';';
 	while (std::getline(file, line))
 	{
-		hash_tests::test_zobrist_hashing_on_fen_with_perft(line, depth);
+		std::stringstream line_ss(line);
+		std::getline(line_ss, fen, delimeter);
+		std::getline(line_ss, depth_str, delimeter);
+		std::getline(line_ss, perft_result, delimeter);
+		hash_tests::test_zobrist_hashing_on_fen_with_perft(fen, std::stoi(depth_str), TT_size_in_MB, std::stoull(perft_result));
 	}
 	if (!any_test_failed)
 		std::cout << "BoardTests::zobrist_hashing_test passed" << std::endl;
