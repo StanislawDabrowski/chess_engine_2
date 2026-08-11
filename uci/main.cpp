@@ -236,6 +236,7 @@ void go_command_function(std::vector<std::string> args)
 	{
 		int16_t depth_max = -1;
 		uint64_t wtime = -1, btime = -1, winc = -1, binc = -1;
+		int32_t movestogo = -1;
 		for (int i = 0;i<args.size();++i)
 		{
 			if (args[i] == "depth")
@@ -343,6 +344,27 @@ void go_command_function(std::vector<std::string> args)
 					return;
 				}
 			}
+			else if (args[i] == "movestogo")
+			{
+				++i;
+				if (i < args.size())
+				{
+					try
+					{
+						movestogo = std::stoi(args[i]);
+					}
+					catch (...)
+					{
+						return;
+					}
+					
+				}
+				else
+				{
+					out << "No movestogo specified after 'movestogo'" << std::endl;
+					return;
+				}
+			}
 		}
 		if (depth_max == -1)
 		{
@@ -443,7 +465,7 @@ void go_command_function(std::vector<std::string> args)
 				winc = 0;
 			if (binc == -1)
 				binc = 0;
-			std::pair<uint64_t, uint64_t> time_to_think = get_time_to_think_in_ms(&engine_for_go_command, wtime, btime, winc, binc);
+			std::pair<uint64_t, uint64_t> time_to_think = get_time_to_think_in_ms(&engine_for_go_command, wtime, btime, winc, binc, movestogo);
 			auto start_time = std::chrono::high_resolution_clock::now();
 			engine_for_go_command.search_time_hard_bound = start_time + std::chrono::milliseconds(static_cast<long>(time_to_think.second));
 			std::chrono::time_point<std::chrono::high_resolution_clock> search_time_soft_bound = start_time + std::chrono::milliseconds(static_cast<long>(time_to_think.first));
