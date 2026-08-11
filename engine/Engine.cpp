@@ -78,16 +78,15 @@ template<Color color, bool root, bool qsearch, bool count_searched_nodes>
 requires(!(qsearch && root))
 std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8_t depth, int16_t alpha, int16_t beta)
 {
-	
+	if (stop_search.load(std::memory_order_relaxed))
+	{
+		if constexpr (root)
+			return std::pair<Move, int16_t>(0, 0);
+		else
+			return MAX_EVAL;//we return max eval so the parent node will not choose that node, since it's good for us it's bad for them
+	}
 	if ((qsearch && quiescence_search_nodes_searched % 2048 == 0) || (!qsearch && normal_search_nodes_searched % 2048 == 0))
 	{
-		if (stop_search.load(std::memory_order_relaxed))
-		{
-			if constexpr (root)
-				return std::pair<Move, int16_t>(0, 0);
-			else
-				return MAX_EVAL;//we return max eval so the parent node will not choose that node, since it's good for us it's bad for them
-		}
 		if (std::chrono::high_resolution_clock::now() >= search_time_hard_bound)
 		{
 			stop_search.store(true, std::memory_order_relaxed);
@@ -120,6 +119,38 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 			return search<color, false, true, count_searched_nodes>(0, alpha, beta);
 	}
 	
+	int16_t best_score = MIN_EVAL - 1;
+	TTEntry *tt_entry = &TT[board.positions_stack[board.current_position_idx].hash%TT_size];
+	if (tt_entry->hash == board.positions_stack[board.current_position_idx].hash && tt_entry->depth >= depth)
+	{
+		switch (tt_entry->eval_type)
+		{
+		case TTEvalType::Exact:
+			if constexpr (root)
+				return std::make_pair(tt_entry->best_move, tt_entry->eval);
+			else
+				return tt_entry->eval;
+			break;
+		case TTEvalType::LowerBound:
+			best_score = tt_entry->eval;
+			alpha = std::max(alpha, best_score);
+			break;
+		case TTEvalType::UpperBound:
+			beta = std::min(beta, tt_entry->eval);
+			break;
+		}
+		if (alpha >= beta)
+		{
+			if constexpr (root)
+			{
+				;//eval type is never exact if we are here and we don't want to return in root if we don't have the actaully best move
+			}
+			else
+				return tt_entry->eval;
+		}
+	}
+	int16_t original_alpha = alpha;
+
 	if constexpr (qsearch)
 		mg.generate_noisy_pseudo_legal_moves<color>();
 	else
@@ -142,7 +173,6 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 		else
 			return eval;
 	}
-	int16_t best_score = MIN_EVAL - 1;
 	if constexpr (qsearch)
 	{
 		if (!mg.checks)
@@ -160,7 +190,6 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 	}
 
 	Move tt_move = 0;
-	TTEntry *tt_entry = &TT[board.positions_stack[board.current_position_idx].hash%TT_size];
 	
 	//move ordering
 	for (int i = 0;i<board.positions_stack[board.current_position_idx].legal_moves_length;++i)
@@ -196,7 +225,7 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 			--j;
 		}
 	}
-	Move best_move;	
+	Move best_move = 0;	
 	for (int i = 0;i<board.positions_stack[board.current_position_idx].legal_moves_length;++i)
 	{
 		board.make_move(board.positions_stack[board.current_position_idx].legal_moves[i]);
@@ -218,6 +247,8 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 		}
 		board.unmake_move();
 	}
+
+	int16_t best_score_for_tt_conditions = best_score;
 	if (std::abs(best_score) > MATE_THRESHOLD)
 	{
 		if (best_score > 0)
@@ -225,10 +256,22 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 		else if (best_score < 0)
 			best_score += 1;//to prefer slower losses
 	}
+	if (best_move == 0)//no move better then the evaluation from the TT was found (eval type must have been lower bound)
+		best_move = tt_entry->best_move;
+
 	//store in TT
-	if (depth != 0)
+	if constexpr (!qsearch)
 	{
+		tt_entry->hash = board.positions_stack[board.current_position_idx].hash;
 		tt_entry->best_move = best_move;
+		tt_entry->depth = depth;
+		tt_entry->eval = best_score;
+		if (best_score_for_tt_conditions >= beta)
+			tt_entry->eval_type = TTEvalType::LowerBound;
+		else if (best_score_for_tt_conditions <= original_alpha)
+			tt_entry->eval_type = TTEvalType::UpperBound;
+		else
+			tt_entry->eval_type = TTEvalType::Exact;
 		++TT_writes;
 	}
 	if constexpr (root)

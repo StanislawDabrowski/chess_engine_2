@@ -70,6 +70,10 @@ void ucinewgame_command_function(std::vector<std::string> args)
 	for (size_t i = 0;i < engine_for_go_command.TT_size;++i)
 	{
 		engine_for_go_command.TT[i].best_move = 0;//set to illegal moves so it's never used
+		engine_for_go_command.TT[i].hash = 0;//hash which is less likely to occur than a hash which actually occured in some game
+		engine_for_go_command.TT[i].eval = Engine::MIN_EVAL;//min eval so with eval type being lower bound leads to entry being never used for eval
+		engine_for_go_command.TT[i].eval_type = TTEvalType::LowerBound;
+		engine_for_go_command.TT[i].depth = 0;//set to 0 to minimise usage
 	}
 }
 
@@ -442,6 +446,7 @@ void go_command_function(std::vector<std::string> args)
 			std::pair<uint64_t, uint64_t> time_to_think = get_time_to_think_in_ms(&engine_for_go_command, wtime, btime, winc, binc);
 			auto start_time = std::chrono::high_resolution_clock::now();
 			engine_for_go_command.search_time_hard_bound = start_time + std::chrono::milliseconds(static_cast<long>(time_to_think.second));
+			std::chrono::time_point<std::chrono::high_resolution_clock> search_time_soft_bound = start_time + std::chrono::milliseconds(static_cast<long>(time_to_think.first));
 			float effective_branching_factor_estimate = 1;
 			long previous_time_passed = -1;
 			for (uint8_t depth = 1;std::abs(search_result.second)<=Engine::MATE_THRESHOLD;++depth)
@@ -463,7 +468,8 @@ void go_command_function(std::vector<std::string> args)
 				else
 					search_result = search_result_temp;
 				previous_time_passed = time_passed;
-				time_passed = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count(); if (previous_time_passed != -1)
+				time_passed = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
+				if (previous_time_passed != -1)
 				{
 					effective_branching_factor_estimate = time_passed/static_cast<float>(previous_time_passed);
 				}
@@ -475,9 +481,10 @@ void go_command_function(std::vector<std::string> args)
 				out << " tthits " << engine_for_go_command.TT_hits;
 				out << " ttwrites " << engine_for_go_command.TT_writes;
 				out << " time " << static_cast<int>(std::round((static_cast<float>(time_passed)/1000.0))) << std::endl;
-				long estimated_time_for_next_depth = time_passed * effective_branching_factor_estimate;
-				if (estimated_time_for_next_depth * 1.2 > time_to_think.first * 1000)//*1000 is neccessary we measure time in microseconds but time_to_think is in milliseconds
+				if (time_passed >= time_to_think.first / 4 * 1000)
+				{
 					break;
+				}
 			}
 		}
 		
