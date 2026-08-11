@@ -447,7 +447,6 @@ void go_command_function(std::vector<std::string> args)
 			auto start_time = std::chrono::high_resolution_clock::now();
 			engine_for_go_command.search_time_hard_bound = start_time + std::chrono::milliseconds(static_cast<long>(time_to_think.second));
 			std::chrono::time_point<std::chrono::high_resolution_clock> search_time_soft_bound = start_time + std::chrono::milliseconds(static_cast<long>(time_to_think.first));
-			float effective_branching_factor_estimate = 1;
 			long previous_time_passed = -1;
 			for (uint8_t depth = 1;std::abs(search_result.second)<=Engine::MATE_THRESHOLD;++depth)
 			{
@@ -469,10 +468,7 @@ void go_command_function(std::vector<std::string> args)
 					search_result = search_result_temp;
 				previous_time_passed = time_passed;
 				time_passed = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
-				if (previous_time_passed != -1)
-				{
-					effective_branching_factor_estimate = time_passed/static_cast<float>(previous_time_passed);
-				}
+				
 				std::string score_string = get_score_string(search_result.second);
 				out << "info depth " << static_cast<int>(depth);
 				out << " score " << score_string;
