@@ -481,7 +481,7 @@ void go_command_function(std::vector<std::string> args)
 				out << " tthits " << engine_for_go_command.TT_hits;
 				out << " ttwrites " << engine_for_go_command.TT_writes;
 				out << " time " << static_cast<int>(std::round((static_cast<float>(time_passed)/1000.0))) << std::endl;
-				if (std::chrono::high_resolution_clock::now() >= search_time_soft_bound)
+				if (time_passed >= time_to_think.first / 4 * 1000)
 				{
 					break;
 				}
