@@ -446,6 +446,7 @@ void go_command_function(std::vector<std::string> args)
 			std::pair<uint64_t, uint64_t> time_to_think = get_time_to_think_in_ms(&engine_for_go_command, wtime, btime, winc, binc);
 			auto start_time = std::chrono::high_resolution_clock::now();
 			engine_for_go_command.search_time_hard_bound = start_time + std::chrono::milliseconds(static_cast<long>(time_to_think.second));
+			std::chrono::time_point<std::chrono::high_resolution_clock> search_time_soft_bound = start_time + std::chrono::milliseconds(static_cast<long>(time_to_think.first));
 			float effective_branching_factor_estimate = 1;
 			long previous_time_passed = -1;
 			for (uint8_t depth = 1;std::abs(search_result.second)<=Engine::MATE_THRESHOLD;++depth)
@@ -480,7 +481,7 @@ void go_command_function(std::vector<std::string> args)
 				out << " tthits " << engine_for_go_command.TT_hits;
 				out << " ttwrites " << engine_for_go_command.TT_writes;
 				out << " time " << static_cast<int>(std::round((static_cast<float>(time_passed)/1000.0))) << std::endl;
-				if (std::chrono::high_resolution_clock::now() >= engine_for_go_command.search_time_hard_bound)
+				if (std::chrono::high_resolution_clock::now() >= search_time_soft_bound)
 				{
 					break;
 				}
