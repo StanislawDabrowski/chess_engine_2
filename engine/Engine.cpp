@@ -78,16 +78,15 @@ template<Color color, bool root, bool qsearch, bool count_searched_nodes>
 requires(!(qsearch && root))
 std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8_t depth, int16_t alpha, int16_t beta)
 {
-	
+	if (stop_search.load(std::memory_order_relaxed))
+	{
+		if constexpr (root)
+			return std::pair<Move, int16_t>(0, 0);
+		else
+			return MAX_EVAL;//we return max eval so the parent node will not choose that node, since it's good for us it's bad for them
+	}
 	if ((qsearch && quiescence_search_nodes_searched % 2048 == 0) || (!qsearch && normal_search_nodes_searched % 2048 == 0))
 	{
-		if (stop_search.load(std::memory_order_relaxed))
-		{
-			if constexpr (root)
-				return std::pair<Move, int16_t>(0, 0);
-			else
-				return MAX_EVAL;//we return max eval so the parent node will not choose that node, since it's good for us it's bad for them
-		}
 		if (std::chrono::high_resolution_clock::now() >= search_time_hard_bound)
 		{
 			stop_search.store(true, std::memory_order_relaxed);
