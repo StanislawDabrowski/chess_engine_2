@@ -153,7 +153,7 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 	//null move pruning
 	if constexpr (!qsearch && !root)
 	{
-		if (!mg.checks && depth >= 3)
+		if (!mg.in_check<color>() && depth >= 3)
 		{
 			board.make_null_move();
 			int16_t score = -search<color==White ? Black : White, false, false, count_searched_nodes>(depth - 1 - 2, -beta, -beta + 1);
