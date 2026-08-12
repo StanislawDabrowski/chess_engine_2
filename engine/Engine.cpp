@@ -149,6 +149,22 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 				return tt_entry->eval;
 		}
 	}
+	
+	//null move pruning
+	if constexpr (!qsearch && !root)
+	{
+		if (!mg.checks)
+		{
+			board.make_null_move();
+			int16_t score = -search<color==White ? Black : White, false, false, count_searched_nodes>(depth - 1, -beta, -beta + 1);
+			board.unmake_move();
+			if (score >= beta)
+			{
+				return score;
+			}
+		}
+	}
+
 	int16_t original_alpha = alpha;
 
 	if constexpr (qsearch)
@@ -214,6 +230,7 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 			board.positions_stack[board.current_position_idx].move_ordering_scores[i] = MoveOrdering::MoveType_score_no_check[board.positions_stack[board.current_position_idx].legal_moves[i] >> 12];
 		}
 	}
+	
 	//sort moves with insertion sort
 	for (int i = 1;i<board.positions_stack[board.current_position_idx].legal_moves_length;++i)
 	{

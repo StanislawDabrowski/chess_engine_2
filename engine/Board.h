@@ -23,6 +23,7 @@ public:
 	static void initialize_hashes();
 	void initialize_castling_mask();
 	void load_fen(std::string fen);
+	void make_null_move();
 	void make_move(Move move);
 	void unmake_move();
 	void calculate_hash();

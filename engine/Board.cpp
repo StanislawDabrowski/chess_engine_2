@@ -138,6 +138,23 @@ void Board::load_fen(std::string fen)
 	positions_stack[current_position_idx].draw_by_repetition = false;
 }
 
+void Board::make_null_move()
+{
+	++current_position_idx;
+	positions_stack[current_position_idx].all_pieces = positions_stack[current_position_idx-1].all_pieces;
+	positions_stack[current_position_idx].all_pieces_types[White] = positions_stack[current_position_idx-1].all_pieces_types[White];
+	positions_stack[current_position_idx].all_pieces_types[Black] = positions_stack[current_position_idx-1].all_pieces_types[Black];
+	std::memcpy(&positions_stack[current_position_idx].pieces, &positions_stack[current_position_idx-1].pieces, sizeof(positions_stack[0].pieces));
+	positions_stack[current_position_idx].castling_rights = positions_stack[current_position_idx-1].castling_rights;
+	positions_stack[current_position_idx].halfmove_clock = positions_stack[current_position_idx-1].halfmove_clock + 1;
+	positions_stack[current_position_idx].hash = positions_stack[current_position_idx-1].hash;
+	positions_stack[current_position_idx].hash ^= zobrist_en_passant_hashes[positions_stack[current_position_idx - 1].en_passant_square];
+	positions_stack[current_position_idx].hash ^= zobrist_side_to_move_hash;
+	positions_stack[current_position_idx].en_passant_square = 0;
+	positions_stack[current_position_idx].draw_by_repetition = false;
+	side_to_move ^= 1;
+}
+
 void Board::make_move(Move move)
 {
 	uint8_t from_square = move & 0b111111;
