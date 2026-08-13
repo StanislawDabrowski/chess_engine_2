@@ -154,10 +154,10 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 	//null move pruning
 	if constexpr (!qsearch && !root)
 	{
-		if (!mg.in_check<color>() && (board.positions_stack[board.current_position_idx].pieces[color][PieceType::Queen] != 0 || board.positions_stack[board.current_position_idx].pieces[color][PieceType::Rook] != 0 || board.positions_stack[board.current_position_idx].pieces[color][PieceType::Bishop] != 0 || board.positions_stack[board.current_position_idx].pieces[color][PieceType::Knight] != 0))
+		if (!mg.in_check<color>() && depth >= 3 && (board.positions_stack[board.current_position_idx].pieces[color][PieceType::Queen] != 0 || board.positions_stack[board.current_position_idx].pieces[color][PieceType::Rook] != 0 || board.positions_stack[board.current_position_idx].pieces[color][PieceType::Bishop] != 0 || board.positions_stack[board.current_position_idx].pieces[color][PieceType::Knight] != 0))
 		{
 			board.make_null_move();
-			int16_t score = -search<color==White ? Black : White, false, false, count_searched_nodes>(depth - 1, -beta, -beta + 1);
+			int16_t score = -search<color==White ? Black : White, false, false, count_searched_nodes>(depth - 1 - 2, -beta, -beta + 1);
 			board.unmake_move();
 			if (score >= beta)
 			{
