@@ -22,6 +22,8 @@ public:
 	uint64_t TT_hits;
 	uint64_t TT_writes;
 
+	static constexpr uint8_t NULL_MOVE_REDUCTION = 2;
+
 	static constexpr int16_t MAX_EVAL = 32767;
 	static constexpr int16_t MIN_EVAL = -32767;//needs to be -32767 so -MIN_EVAL is MAX_EVAL, not itself, which due to integer overflow would probably (it's UB), be the case
 	static constexpr uint8_t MAX_DEPTH = 255;//max depth for normal search (excludes qsearch, qsearch is unbounded)
