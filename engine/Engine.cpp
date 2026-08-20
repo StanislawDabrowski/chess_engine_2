@@ -79,7 +79,7 @@ uint64_t Engine::perft(uint8_t depth)
 
 uint8_t Engine::calculate_reduction_for_lmr(uint8_t move_index, uint8_t depth)
 {
-	return 1 + std::log(depth) * std::log(move_index) / 3;
+	return 1 + std::log(depth) * std::log(move_index) / 5;
 }
 
 template<Color color, bool root, bool qsearch, bool count_searched_nodes>
