@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cmath>
 #include "Engine.h"
 #include "MoveGenerator.h"
 #include "Color.h"
@@ -76,10 +77,9 @@ uint64_t Engine::perft(uint8_t depth)
 
 }
 
-uint8_t Engine::calculate_reduction_for_lmr(uint8_t move_index)
+uint8_t Engine::calculate_reduction_for_lmr(uint8_t move_index, uint8_t depth)
 {
-	return (move_index+3)/6;//linera function, 0 up to index 3, i.e. 4th move, where it's 1
-							//5 from index 27 to 32
+	return 1 + std::log(depth) * std::log(move_index) / 3;
 }
 
 template<Color color, bool root, bool qsearch, bool count_searched_nodes>
@@ -255,7 +255,7 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 	for (int i = 0;i<board.positions_stack[board.current_position_idx].legal_moves_length;++i)
 	{
 		board.make_move(board.positions_stack[board.current_position_idx].legal_moves[i]);
-		int16_t score = -search<color==White ? Black : White, false, qsearch, count_searched_nodes>(depth - (qsearch ? 0 : std::min(static_cast<uint8_t>(1 + calculate_reduction_for_lmr(i)), static_cast<uint8_t>(depth))), -beta, -alpha);
+		int16_t score = -search<color==White ? Black : White, false, qsearch, count_searched_nodes>(depth - (qsearch ? 0 : std::min(static_cast<uint8_t>(1 + calculate_reduction_for_lmr(i, depth)), static_cast<uint8_t>(depth))), -beta, -alpha);
 		
 		if constexpr (!qsearch)
 		{
