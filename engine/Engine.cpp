@@ -255,6 +255,18 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 	for (int i = 0;i<board.positions_stack[board.current_position_idx].legal_moves_length;++i)
 	{
 		board.make_move(board.positions_stack[board.current_position_idx].legal_moves[i]);
+		uint8_t reduction;
+		if (!qsearch)
+		{
+			if (i < 3)
+				reduction = 1;
+			else if (depth <= 2)
+				reduction = 1;
+			else
+				reduction = std::min(static_cast<uint8_t>(1 + calculate_reduction_for_lmr(i, depth)), static_cast<uint8_t>(depth));
+		}
+		else
+			reduction = 0;
 		int16_t score = -search<color==White ? Black : White, false, qsearch, count_searched_nodes>(depth - (qsearch ? 0 : ( i < 3) ?  1 : std::min(static_cast<uint8_t>(1 + calculate_reduction_for_lmr(i, depth)), static_cast<uint8_t>(depth))), -beta, -alpha);
 		
 		if constexpr (!qsearch)
