@@ -260,7 +260,7 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 		{
 			if (i < 3)
 				reduction = 1;
-			else if (depth <= 2)
+			else if (depth <= 3)
 				reduction = 1;
 			else
 				reduction = std::min(static_cast<uint8_t>(1 + calculate_reduction_for_lmr(i, depth)), static_cast<uint8_t>(depth));
