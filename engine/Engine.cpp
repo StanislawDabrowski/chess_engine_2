@@ -271,7 +271,7 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 		
 		if constexpr (!qsearch)
 		{
-			if (score > alpha)
+			if (reduction > 1 && score > alpha)
 			{
 				score = -search<color==White ? Black : White, false, false, count_searched_nodes>(depth - 1, -beta, -alpha);
 			}
