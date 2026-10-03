@@ -418,9 +418,9 @@ void go_command_function(std::vector<std::string> args)
 				engine_for_go_command.TT_hits = 0;
 				engine_for_go_command.TT_writes = 0;
 				if (engine_for_go_command.board.side_to_move == White)
-					search_result_temp = engine_for_go_command.search<White, true, false, true>(depth);
+					search_result_temp = engine_for_go_command.search<White, true, false>(depth);
 				else
-					search_result_temp = engine_for_go_command.search<Black, true, false, true>(depth);
+					search_result_temp = engine_for_go_command.search<Black, true, false>(depth);
 				if (engine_for_go_command.stop_search.load(std::memory_order_relaxed))
 					break;
 				else
@@ -477,9 +477,9 @@ void go_command_function(std::vector<std::string> args)
 				engine_for_go_command.TT_hits = 0;
 				engine_for_go_command.TT_writes = 0;
 				if (engine_for_go_command.board.side_to_move == White)
-					search_result_temp = engine_for_go_command.search<White, true, false, true>(depth);
+					search_result_temp = engine_for_go_command.search<White, true, false>(depth);
 				else
-					search_result_temp = engine_for_go_command.search<Black, true, false, true>(depth);
+					search_result_temp = engine_for_go_command.search<Black, true, false>(depth);
 				if (engine_for_go_command.stop_search.load(std::memory_order_relaxed) || std::chrono::high_resolution_clock::now() >= engine_for_go_command.search_time_hard_bound)
 				{
 					if (search_result.first == 0)

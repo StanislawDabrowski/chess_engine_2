@@ -75,7 +75,7 @@ uint64_t Engine::perft(uint8_t depth)
 
 }
 
-template<Color color, bool root, bool qsearch, bool count_searched_nodes>
+template<Color color, bool root, bool qsearch>
 requires(!(qsearch && root))
 std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8_t depth, int16_t alpha, int16_t beta)
 {
@@ -97,13 +97,10 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 				return MAX_EVAL;
 		}
 	}
-	if constexpr (count_searched_nodes)
-	{
-		if constexpr (qsearch)
-			++quiescence_search_nodes_searched;
-		else
-			++normal_search_nodes_searched;
-	}
+	if constexpr (qsearch)
+		++quiescence_search_nodes_searched;
+	else
+		++normal_search_nodes_searched;
 	//negmax with alpha-beta pruning
 	if (board.positions_stack[board.current_position_idx].draw_by_repetition || board.positions_stack[board.current_position_idx].halfmove_clock >= 100)
 	{
@@ -115,9 +112,9 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 	if (depth == 0 && !qsearch)
 	{
 		if constexpr (root)
-			return std::pair<Move, int16_t>(0, search<color, false, true, count_searched_nodes>(0, alpha, beta));
+			return std::pair<Move, int16_t>(0, search<color, false, true>(0, alpha, beta));
 		else
-			return search<color, false, true, count_searched_nodes>(0, alpha, beta);
+			return search<color, false, true>(0, alpha, beta);
 	}
 	
 	int16_t best_score = MIN_EVAL - 1;
@@ -158,7 +155,7 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 		if (!mg.in_check<color>() && depth >= 1 + null_move_reduction && (board.positions_stack[board.current_position_idx].pieces[color][PieceType::Queen] != 0 || board.positions_stack[board.current_position_idx].pieces[color][PieceType::Rook] != 0 || board.positions_stack[board.current_position_idx].pieces[color][PieceType::Bishop] != 0 || board.positions_stack[board.current_position_idx].pieces[color][PieceType::Knight] != 0))
 		{
 			board.make_null_move();
-			int16_t score = -search<color==White ? Black : White, false, false, count_searched_nodes>(depth - 1 - null_move_reduction, -beta, -beta + 1);
+			int16_t score = -search<color==White ? Black : White, false, false>(depth - 1 - null_move_reduction, -beta, -beta + 1);
 			board.unmake_move();
 			if (score >= beta)
 			{
@@ -248,7 +245,7 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 	for (int i = 0;i<board.positions_stack[board.current_position_idx].legal_moves_length;++i)
 	{
 		board.make_move(board.positions_stack[board.current_position_idx].legal_moves[i]);
-		int16_t score = -search<color==White ? Black : White, false, qsearch, count_searched_nodes>(depth - (qsearch ? 0 : 1), -beta, -alpha);
+		int16_t score = -search<color==White ? Black : White, false, qsearch>(depth - (qsearch ? 0 : 1), -beta, -alpha);
 		
 		if (score > best_score)
 		{
@@ -310,12 +307,6 @@ template std::pair<Move, int16_t> Engine::search<White, true>(uint8_t depth, int
 template std::pair<Move, int16_t> Engine::search<Black, true>(uint8_t depth, int16_t alpha, int16_t beta);
 template int16_t Engine::search<White, false>(uint8_t depth, int16_t alpha, int16_t beta);
 template int16_t Engine::search<Black, false>(uint8_t depth, int16_t alpha, int16_t beta);
-template std::pair<Move, int16_t> Engine::search<White, true, false, true>(uint8_t depth, int16_t alpha, int16_t beta);
-template std::pair<Move, int16_t> Engine::search<Black, true, false, true>(uint8_t depth, int16_t alpha, int16_t beta);
-template int16_t Engine::search<White, false, false, true>(uint8_t depth, int16_t alpha, int16_t beta);
-template int16_t Engine::search<Black, false, false, true>(uint8_t depth, int16_t alpha, int16_t beta);
 
-template int16_t Engine::search<White, false, true, true>(uint8_t depth, int16_t alpha, int16_t beta);
-template int16_t Engine::search<Black, false, true, true>(uint8_t depth, int16_t alpha, int16_t beta);
-template int16_t Engine::search<White, false, true, false>(uint8_t depth, int16_t alpha, int16_t beta);
-template int16_t Engine::search<Black, false, true, false>(uint8_t depth, int16_t alpha, int16_t beta);
+template int16_t Engine::search<White, false, true>(uint8_t depth, int16_t alpha, int16_t beta);
+template int16_t Engine::search<Black, false, true>(uint8_t depth, int16_t alpha, int16_t beta);
