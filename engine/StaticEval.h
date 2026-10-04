@@ -12,6 +12,7 @@ public:
 	MoveGenerator* mg;
 	static bool static_members_initialized;
 	static constexpr uint16_t piece_values[6] = { 100, 300, 300, 500, 900, 0 };//pawn knight bishop rook queen king
+	static constexpr int16_t side_to_move_bonus = 80;//bonus for being the side to move
 	static constexpr int16_t mobility_score = 10;//score for each pseudo legal move
 	static constexpr int16_t score_for_panws_1_in_front_of_king = 15;
 	static constexpr int16_t score_for_pawns_2_in_front_of_king = 10;

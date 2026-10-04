@@ -242,7 +242,7 @@ template<Color color>
 int16_t StaticEval::evaluate()
 {
 	constexpr Color opp = color == White ? Black : White;
-	int16_t score = 0;
+	int16_t score = side_to_move_bonus;
 	for (int color_iter = 0; color_iter < 2; ++color_iter)
 	{
 		for (int piece_type = 0; piece_type < 6; ++piece_type)
