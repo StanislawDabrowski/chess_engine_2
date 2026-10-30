@@ -278,17 +278,20 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 	//store in TT
 	if constexpr (!qsearch)
 	{
-		tt_entry->hash = board.positions_stack[board.current_position_idx].hash;
-		tt_entry->best_move = best_move;
-		tt_entry->depth = depth;
-		tt_entry->eval = best_score;
-		if (best_score_for_tt_conditions >= beta)
-			tt_entry->eval_type = TTEvalType::LowerBound;
-		else if (best_score_for_tt_conditions <= original_alpha)
-			tt_entry->eval_type = TTEvalType::UpperBound;
-		else
-			tt_entry->eval_type = TTEvalType::Exact;
-		++TT_writes;
+		if (!stop_search.load(std::memory_order_relaxed))
+		{
+			tt_entry->hash = board.positions_stack[board.current_position_idx].hash;
+			tt_entry->best_move = best_move;
+			tt_entry->depth = depth;
+			tt_entry->eval = best_score;
+			if (best_score_for_tt_conditions >= beta)
+				tt_entry->eval_type = TTEvalType::LowerBound;
+			else if (best_score_for_tt_conditions <= original_alpha)
+				tt_entry->eval_type = TTEvalType::UpperBound;
+			else
+				tt_entry->eval_type = TTEvalType::Exact;
+			++TT_writes;
+		}
 	}
 	if constexpr (root)
 		return std::pair<Move, int16_t>(best_move, best_score);
