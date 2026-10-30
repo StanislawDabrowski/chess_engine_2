@@ -1,0 +1,70 @@
+diff --git a/uci/main.cpp b/uci/main.cpp
+index b600246..baaa1af 100644
+--- a/uci/main.cpp
++++ b/uci/main.cpp
+@@ -237,6 +237,7 @@ void go_command_function(std::vector<std::string> args)
+ 		int16_t depth_max = -1;
+ 		uint64_t wtime = -1, btime = -1, winc = -1, binc = -1;
+ 		int32_t movestogo = -1;
++		uint64_t movetime = -1;
+ 		for (int i = 0;i<args.size();++i)
+ 		{
+ 			if (args[i] == "depth")
+@@ -365,8 +366,33 @@ void go_command_function(std::vector<std::string> args)
+ 					return;
+ 				}
+ 			}
++			else if (args[i] == "movetime")
++			{
++				++i;
++				if (i < args.size())
++				{
++					try
++					{
++						movetime = std::stoull(args[i]);
++						if (movetime <= 50)
++							movetime = 1;
++						else
++							movetime -= 50;//subtract 50ms to account for communication overhead
++					}
++					catch (...)
++					{
++						return;
++					}
++					
++				}
++				else
++				{
++					out << "No move time specified after 'movetime'" << std::endl;
++					return;
++				}
++			}
+ 		}
+-		if (depth_max == -1)
++		if (depth_max == -1 && movetime == -1)
+ 		{
+ 			if (engine.board.side_to_move == White)
+ 			{
+@@ -467,7 +493,12 @@ void go_command_function(std::vector<std::string> args)
+ 				binc = 0;
+ 			std::pair<uint64_t, uint64_t> time_to_think = get_time_to_think_in_ms(&engine_for_go_command, wtime, btime, winc, binc, movestogo);
+ 			auto start_time = std::chrono::high_resolution_clock::now();
+-			engine_for_go_command.search_time_hard_bound = start_time + std::chrono::milliseconds(static_cast<long>(time_to_think.second));
++			uint64_t hard_bound;
++			if (movetime != -1)
++				hard_bound = movetime;
++			else
++				hard_bound = time_to_think.second;
++			engine_for_go_command.search_time_hard_bound = start_time + std::chrono::milliseconds(static_cast<long>(hard_bound));
+ 			std::chrono::time_point<std::chrono::high_resolution_clock> search_time_soft_bound = start_time + std::chrono::milliseconds(static_cast<long>(time_to_think.first));
+ 			long previous_time_passed = -1;
+ 			for (uint8_t depth = 1;std::abs(search_result.second)<=Engine::MATE_THRESHOLD;++depth)
+@@ -499,7 +530,7 @@ void go_command_function(std::vector<std::string> args)
+ 				out << " tthits " << engine_for_go_command.TT_hits;
+ 				out << " ttwrites " << engine_for_go_command.TT_writes;
+ 				out << " time " << static_cast<int>(std::round((static_cast<float>(time_passed)/1000.0))) << std::endl;
+-				if (time_passed >= time_to_think.first / 4 * 1000)
++				if (movetime == -1 && time_passed >= time_to_think.first / 4 * 1000)
+ 				{
+ 					break;
+ 				}
