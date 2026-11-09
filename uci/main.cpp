@@ -60,8 +60,17 @@ void set_hash(std::string val)
 	}
 }
 
+void set_evaluated_positions_output_file(std::string val)
+{
+	if (!engine_for_go_command.se.set_evaluated_positions_output_file(val))
+	{
+		std::cout << "Failed to open evaluated positions output file: " << val << std::endl;
+	}
+}
+
 static std::unordered_map<std::string, std::function<void(std::string)>> option_setters = {
 	{"Hash", set_hash},
+	{"EvaluatedPositionsOutputFileForDatagen", set_evaluated_positions_output_file},
 };
 
 void ucinewgame_command_function(std::vector<std::string> args)
@@ -131,6 +140,7 @@ void uci_command_function(std::vector<std::string> args)
 	std::cout << "id name ChessEngine2" << std::endl;
 	std::cout << "id author Avalfortz" << std::endl;
 	std::cout << "option name Hash type spin default " << default_hash_size_in_mb << " min " << min_hash_size_in_mb << " max " << max_hash_size_in_mb << std::endl;
+	std::cout << "option name EvaluatedPositionsOutputFileForDatagen type string default <empty>" << std::endl;
 	std::cout << "uciok" << std::endl;
 }
 
@@ -238,6 +248,7 @@ void go_command_function(std::vector<std::string> args)
 		uint64_t wtime = -1, btime = -1, winc = -1, binc = -1;
 		int32_t movestogo = -1;
 		uint64_t movetime = -1;
+		bool save_statically_evaluated_positions_to_file = false;
 		for (int i = 0;i<args.size();++i)
 		{
 			if (args[i] == "depth")
@@ -391,6 +402,11 @@ void go_command_function(std::vector<std::string> args)
 					return;
 				}
 			}
+			else if (args[i] == "save_statically_evaluated_positions_to_file")
+			{
+				save_statically_evaluated_positions_to_file = true;
+			}
+
 		}
 		if (depth_max == -1 && movetime == -1)
 		{
@@ -428,9 +444,15 @@ void go_command_function(std::vector<std::string> args)
 			{
 				search_result.first = engine_for_go_command.board.positions_stack[engine_for_go_command.board.current_position_idx].legal_moves[0];
 				if (engine_for_go_command.board.side_to_move == White)
-					search_result.second = engine_for_go_command.se.evaluate<White>();
+					if (save_statically_evaluated_positions_to_file)
+						search_result.second = engine_for_go_command.se.evaluate<White, true>();
+					else
+						search_result.second = engine_for_go_command.se.evaluate<White>();
 				else
-					search_result.second = engine_for_go_command.se.evaluate<Black>();
+					if (save_statically_evaluated_positions_to_file)
+						search_result.second = engine_for_go_command.se.evaluate<Black, true>();
+					else
+						search_result.second = engine_for_go_command.se.evaluate<Black>();
 				out << "info depth 1 score cp " << search_result.second << " nodes 1 time 0" << std::endl;
 				out << "bestmove " << Utils::move_to_string(search_result.first) << std::endl;
 				return;
@@ -444,9 +466,15 @@ void go_command_function(std::vector<std::string> args)
 				engine_for_go_command.TT_hits = 0;
 				engine_for_go_command.TT_writes = 0;
 				if (engine_for_go_command.board.side_to_move == White)
-					search_result_temp = engine_for_go_command.search<White, true, false>(depth);
+					if (save_statically_evaluated_positions_to_file)
+						search_result_temp = engine_for_go_command.search<White, true, true, false>(depth);
+					else
+						search_result_temp = engine_for_go_command.search<White, false, true, false>(depth);
 				else
-					search_result_temp = engine_for_go_command.search<Black, true, false>(depth);
+					if (save_statically_evaluated_positions_to_file)
+						search_result_temp = engine_for_go_command.search<Black, true, true, false>(depth);
+					else
+						search_result_temp = engine_for_go_command.search<Black, false, true, false>(depth);
 				if (engine_for_go_command.stop_search.load(std::memory_order_relaxed))
 					break;
 				else
@@ -480,9 +508,15 @@ void go_command_function(std::vector<std::string> args)
 			{
 				search_result.first = engine_for_go_command.board.positions_stack[engine_for_go_command.board.current_position_idx].legal_moves[0];
 				if (engine_for_go_command.board.side_to_move == White)
-					search_result.second = engine_for_go_command.se.evaluate<White>();
+					if (save_statically_evaluated_positions_to_file)
+						search_result.second = engine_for_go_command.se.evaluate<White, true>();
+					else
+						search_result.second = engine_for_go_command.se.evaluate<White>();
 				else
-					search_result.second = engine_for_go_command.se.evaluate<Black>();
+					if (save_statically_evaluated_positions_to_file)
+						search_result.second = engine_for_go_command.se.evaluate<Black, true>();
+					else
+						search_result.second = engine_for_go_command.se.evaluate<Black>();
 				out << "info depth 1 " << "score cp " << search_result.second << " nodes 1 time 0" << std::endl;
 				out << "bestmove " << Utils::move_to_string(search_result.first) << std::endl;
 				return;
@@ -508,9 +542,15 @@ void go_command_function(std::vector<std::string> args)
 				engine_for_go_command.TT_hits = 0;
 				engine_for_go_command.TT_writes = 0;
 				if (engine_for_go_command.board.side_to_move == White)
-					search_result_temp = engine_for_go_command.search<White, true, false>(depth);
+					if (save_statically_evaluated_positions_to_file)
+						search_result_temp = engine_for_go_command.search<White, true, true, false>(depth);
+					else
+						search_result_temp = engine_for_go_command.search<White, false, true, false>(depth);
 				else
-					search_result_temp = engine_for_go_command.search<Black, true, false>(depth);
+					if (save_statically_evaluated_positions_to_file)
+						search_result_temp = engine_for_go_command.search<Black, true, true, false>(depth);
+					else
+						search_result_temp = engine_for_go_command.search<Black, false, true, false>(depth);
 				if (engine_for_go_command.stop_search.load(std::memory_order_relaxed) || std::chrono::high_resolution_clock::now() >= engine_for_go_command.search_time_hard_bound)
 				{
 					if (search_result.first == 0)

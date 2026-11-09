@@ -75,14 +75,18 @@ uint64_t Engine::perft(uint8_t depth)
 
 }
 
-template<Color color, bool root, bool qsearch>
+template<Color color, bool save_position_to_file, bool root, bool qsearch>
 requires(!(qsearch && root))
 std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8_t depth, int16_t alpha, int16_t beta)
 {
 	if (stop_search.load(std::memory_order_relaxed))
 	{
 		if constexpr (root)
+		{
+			if constexpr (save_position_to_file)
+				se.evaluated_positions_output_file << std::flush;
 			return std::pair<Move, int16_t>(0, 0);
+		}
 		else
 			return MAX_EVAL;//we return max eval so the parent node will not choose that node, since it's good for us it's bad for them
 	}
@@ -92,7 +96,11 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 		{
 			stop_search.store(true, std::memory_order_relaxed);
 			if constexpr (root)
+			{
+				if constexpr (save_position_to_file)
+					se.evaluated_positions_output_file << std::flush;
 				return std::pair<Move, int16_t>(0, 0);
+			}
 			else
 				return MAX_EVAL;
 		}
@@ -105,16 +113,24 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 	if (board.positions_stack[board.current_position_idx].draw_by_repetition || board.positions_stack[board.current_position_idx].halfmove_clock >= 100)
 	{
 		if constexpr (root)
+		{
+			if constexpr (save_position_to_file)
+				se.evaluated_positions_output_file << std::flush;
 			return std::pair<Move, int16_t>(0, 0);
+		}
 		else
 			return 0;
 	}
 	if (depth == 0 && !qsearch)
 	{
 		if constexpr (root)
-			return std::pair<Move, int16_t>(0, search<color, false, true>(0, alpha, beta));
+		{
+			if constexpr (save_position_to_file)
+				se.evaluated_positions_output_file << std::flush;
+			return std::pair<Move, int16_t>(0, search<color, save_position_to_file, false, true>(0, alpha, beta));
+		}
 		else
-			return search<color, false, true>(0, alpha, beta);
+			return search<color, save_position_to_file, false, true>(0, alpha, beta);
 	}
 	
 	int16_t best_score = MIN_EVAL - 1;
@@ -125,7 +141,11 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 		{
 		case TTEvalType::Exact:
 			if constexpr (root)
+			{
+				if constexpr (save_position_to_file)
+					se.evaluated_positions_output_file << std::flush;
 				return std::make_pair(tt_entry->best_move, tt_entry->eval);
+			}
 			else
 				return tt_entry->eval;
 			break;
@@ -155,7 +175,7 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 		if (!mg.in_check<color>() && depth >= 1 + null_move_reduction && (board.positions_stack[board.current_position_idx].pieces[color][PieceType::Queen] != 0 || board.positions_stack[board.current_position_idx].pieces[color][PieceType::Rook] != 0 || board.positions_stack[board.current_position_idx].pieces[color][PieceType::Bishop] != 0 || board.positions_stack[board.current_position_idx].pieces[color][PieceType::Knight] != 0))
 		{
 			board.make_null_move();
-			int16_t score = -search<color==White ? Black : White, false, false>(depth - 1 - null_move_reduction, -beta, -beta + 1);
+			int16_t score = -search<color==White ? Black : White, save_position_to_file, false, false>(depth - 1 - null_move_reduction, -beta, -beta + 1);
 			board.unmake_move();
 			if (score >= beta)
 			{
@@ -180,11 +200,18 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 			eval = MIN_EVAL;
 		else
 			if constexpr (qsearch)
-				eval = se.evaluate<color>();
+				if constexpr (save_position_to_file)
+					eval = se.evaluate<color, true>();
+				else
+					eval = se.evaluate<color>();
 			else
 				eval = 0;
 		if constexpr (root)
+		{
+			if constexpr (save_position_to_file)
+				se.evaluated_positions_output_file << std::flush;
 			return std::pair<Move, int16_t>(0, eval);
+		}
 		else
 			return eval;
 	}
@@ -192,7 +219,10 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 	{
 		if (!mg.checks)
 		{
-			best_score = se.evaluate<color>();
+			if constexpr (save_position_to_file)
+				best_score = se.evaluate<color, true>();
+			else
+				best_score = se.evaluate<color>();
 			if (best_score >= beta)
 			{
 				return best_score;
@@ -245,7 +275,7 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 	for (int i = 0;i<board.positions_stack[board.current_position_idx].legal_moves_length;++i)
 	{
 		board.make_move(board.positions_stack[board.current_position_idx].legal_moves[i]);
-		int16_t score = -search<color==White ? Black : White, false, qsearch>(depth - (qsearch ? 0 : 1), -beta, -alpha);
+		int16_t score = -search<color==White ? Black : White, save_position_to_file, false, qsearch>(depth - (qsearch ? 0 : 1), -beta, -alpha);
 		
 		if (score > best_score)
 		{
@@ -294,7 +324,11 @@ std::conditional_t<root, std::pair<Move, int16_t>, int16_t> Engine::search(uint8
 		}
 	}
 	if constexpr (root)
+	{
+		if constexpr (save_position_to_file)
+			se.evaluated_positions_output_file << std::flush;
 		return std::pair<Move, int16_t>(best_move, best_score);
+	}
 	else
 		return best_score;
 }
@@ -306,10 +340,16 @@ template uint64_t Engine::perft<White>(uint8_t depth);
 template uint64_t Engine::perft<Black>(uint8_t depth);
 
 
-template std::pair<Move, int16_t> Engine::search<White, true>(uint8_t depth, int16_t alpha, int16_t beta);
-template std::pair<Move, int16_t> Engine::search<Black, true>(uint8_t depth, int16_t alpha, int16_t beta);
-template int16_t Engine::search<White, false>(uint8_t depth, int16_t alpha, int16_t beta);
-template int16_t Engine::search<Black, false>(uint8_t depth, int16_t alpha, int16_t beta);
+template std::pair<Move, int16_t> Engine::search<White, false, true>(uint8_t depth, int16_t alpha, int16_t beta);
+template std::pair<Move, int16_t> Engine::search<White, true, true>(uint8_t depth, int16_t alpha, int16_t beta);
+template std::pair<Move, int16_t> Engine::search<Black, false, true>(uint8_t depth, int16_t alpha, int16_t beta);
+template std::pair<Move, int16_t> Engine::search<Black, true, true>(uint8_t depth, int16_t alpha, int16_t beta);
+template int16_t Engine::search<White, false, false>(uint8_t depth, int16_t alpha, int16_t beta);
+template int16_t Engine::search<White, true, false>(uint8_t depth, int16_t alpha, int16_t beta);
+template int16_t Engine::search<Black, false, false>(uint8_t depth, int16_t alpha, int16_t beta);
+template int16_t Engine::search<Black, true, false>(uint8_t depth, int16_t alpha, int16_t beta);
 
-template int16_t Engine::search<White, false, true>(uint8_t depth, int16_t alpha, int16_t beta);
-template int16_t Engine::search<Black, false, true>(uint8_t depth, int16_t alpha, int16_t beta);
+template int16_t Engine::search<White, false, false, true>(uint8_t depth, int16_t alpha, int16_t beta);
+template int16_t Engine::search<White, true, false, true>(uint8_t depth, int16_t alpha, int16_t beta);
+template int16_t Engine::search<Black, false, false, true>(uint8_t depth, int16_t alpha, int16_t beta);
+template int16_t Engine::search<Black, true, false, true>(uint8_t depth, int16_t alpha, int16_t beta);

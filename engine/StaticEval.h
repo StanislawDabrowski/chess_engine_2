@@ -1,4 +1,5 @@
 #pragma once
+#include <fstream>
 #include "Board.h"
 #include "MoveGenerator.h"
 #include "Color.h"
@@ -10,6 +11,9 @@ class StaticEval
 public:
 	Board* board;
 	MoveGenerator* mg;
+	
+	std::ofstream evaluated_positions_output_file;
+
 	static bool static_members_initialized;
 	static constexpr uint16_t piece_values[6] = { 100, 300, 300, 500, 900, 0 };//pawn knight bishop rook queen king
 	static constexpr int16_t mobility_score = 10;//score for each pseudo legal move
@@ -20,11 +24,12 @@ public:
 	static Bitboard squares_2_in_front[2][64];//3 squares 2 ranks above the king
 	static Bitboard squares_next_to_king[2][64];//2 squares next to the king
 	StaticEval(Board* board, MoveGenerator* mg);
+	bool set_evaluated_positions_output_file(const std::string& filename);
 	static void initialize_static_members();
 	template<Color color>
 	int16_t evaluate_mobility();
 	template<Color color>
 	int16_t evaluate_king_safety();
-	template<Color color>
+	template<Color color, bool save_position_to_file = false>
 	int16_t evaluate();
 };

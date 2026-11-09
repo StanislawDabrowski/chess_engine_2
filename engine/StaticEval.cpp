@@ -14,6 +14,16 @@ StaticEval::StaticEval(Board* board, MoveGenerator* mg)
 	:board(board), mg(mg)
 { }
 
+bool StaticEval::set_evaluated_positions_output_file(const std::string& filename)
+{
+	if (evaluated_positions_output_file.is_open())
+	{
+		evaluated_positions_output_file.close();
+		evaluated_positions_output_file.clear();
+	}
+	evaluated_positions_output_file.open(filename, std::ios::app | std::ios::binary);
+	return evaluated_positions_output_file.is_open();
+}
 void StaticEval::initialize_static_members()
 {
 	if (static_members_initialized)
@@ -238,9 +248,18 @@ int16_t StaticEval::evaluate_king_safety()
 	return score;
 }
 
-template<Color color>
+template<Color color, bool save_position_to_file>
 int16_t StaticEval::evaluate()
 {
+	if constexpr (save_position_to_file)
+	{
+		if (!evaluated_positions_output_file.is_open())
+		{
+			std::cerr << "Evaluated positions output file is not open." << std::endl;
+			return 0;
+		}
+		evaluated_positions_output_file << Utils::get_fen(board) + "\n";
+	}
 	constexpr Color opp = color == White ? Black : White;
 	int16_t score = 0;
 	for (int color_iter = 0; color_iter < 2; ++color_iter)
@@ -261,5 +280,7 @@ int16_t StaticEval::evaluate()
 
 
 
-template int16_t StaticEval::evaluate<White>();
-template int16_t StaticEval::evaluate<Black>();
+template int16_t StaticEval::evaluate<White, false>();
+template int16_t StaticEval::evaluate<Black, false>();
+template int16_t StaticEval::evaluate<Black, true>();
+template int16_t StaticEval::evaluate<White, true>();
